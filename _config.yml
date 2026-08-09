@@ -1,4 +1,3 @@
 title: ECHO on BabyAI
 description: A working report on ECHO auxiliary training in BabyAI.
-theme: jekyll-theme-minimal
-show_downloads: false
+markdown: kramdown
