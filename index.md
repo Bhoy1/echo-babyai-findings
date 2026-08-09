@@ -30,8 +30,7 @@ We ran Qwen3.5-9B for 100 training steps and evaluated each checkpoint on 28 hel
 
 ## Always-on objectives
 
-![Always-on eval reward](figures/eval_alwayson.png)
-![Always-on training reward](figures/train_alwayson.png)
+![Always-on training and held-out evaluation reward](figures/always_on_curves.png)
 
 ![Always-on objectives table](figures/table_alwayson.png)
 
@@ -41,8 +40,7 @@ The training-reward panel tells a slightly different story: RL-only actually tra
 
 ## Switch schedules (phase runs, switch at step 50)
 
-![Switch schedules eval reward](figures/eval_switch.png)
-![Switch schedules training reward](figures/train_switch.png)
+![Switch-schedule training and held-out evaluation reward](figures/switch_curves.png)
 
 ![Switch schedules table](figures/table_switch.png)
 
