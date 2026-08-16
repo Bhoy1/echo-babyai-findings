@@ -8,12 +8,19 @@ from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TRAINING_CSV = ROOT / "data" / "training_behavior_metrics.csv"
 ALWAYS_EVAL_CSV = ROOT / "data" / "checkpoint_eval_metrics.csv"
 SWITCH_EVAL_CSV = ROOT / "data" / "babyai_switch50_eval_curve.csv"
+THREE_RUN_TRAIN_CSV = (
+    ROOT / "data" / "three_independent_runs" / "training_reward_mean_sd.csv"
+)
+THREE_RUN_EVAL_CSV = (
+    ROOT / "data" / "three_independent_runs" / "eval_reward_mean_sd.csv"
+)
 FIGURE_DIR = ROOT / "figures"
 
 TEXT = "#20252B"
@@ -27,8 +34,10 @@ COLORS = {
     "echo005": "#2778A5",
     "echo050": "#D1842D",
     "echo100": "#43805E",
-    "rl_echo": "#2778A5",
-    "echo_rl": "#C65368",
+    "rl_echo": "#0072B2",
+    "echo_rl": "#D55E00",
+    "reference_rl": "#6B7280",
+    "reference_echo": "#80658B",
 }
 
 ALWAYS_TRAIN = {
@@ -73,6 +82,18 @@ SWITCH_EVAL = {
         "rl50_echo100": ("RL to ECHO", "rl_echo"),
         "echo100_rl50": ("ECHO to RL", "echo_rl"),
     },
+}
+
+ALWAYS_TRAIN_BY_WEIGHT = {
+    "0.05": "always_on/echo_0.05",
+    "0.5": "always_on/echo_0.5",
+    "1.0": "always_on/echo_1.0",
+}
+
+ALWAYS_EVAL_BY_WEIGHT = {
+    "0.05": "echo005",
+    "0.5": "echo050",
+    "1.0": "echo100",
 }
 
 
@@ -131,11 +152,31 @@ def load_switch_eval() -> tuple[
     return base, curves
 
 
-def style_axis(axis: plt.Axes, *, switch: bool = False) -> None:
-    axis.set_xlim(0, 100)
-    axis.set_ylim(0.35, 0.95)
-    axis.set_xticks([0, 20, 40, 60, 80, 100])
-    axis.set_yticks([0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+def load_three_run_means(path: Path) -> dict[str, list[tuple[int, float]]]:
+    curves: dict[str, list[tuple[int, float]]] = defaultdict(list)
+    with path.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            curves[row["variant"]].append(
+                (int(row["step"]), float(row["reward_mean"]))
+            )
+    for points in curves.values():
+        points.sort()
+    return curves
+
+
+def style_axis(
+    axis: plt.Axes,
+    *,
+    switch: bool = False,
+    xlim: tuple[float, float] = (0, 100),
+    ylim: tuple[float, float] = (0.35, 0.95),
+    xticks: list[int] | None = None,
+    yticks: list[float] | None = None,
+) -> None:
+    axis.set_xlim(*xlim)
+    axis.set_ylim(*ylim)
+    axis.set_xticks(xticks or [0, 20, 40, 60, 80, 100])
+    axis.set_yticks(yticks or [0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
     axis.grid(axis="y", color=GRID, linewidth=0.8)
     axis.set_axisbelow(True)
     axis.spines["top"].set_visible(False)
@@ -203,6 +244,36 @@ def draw_eval(
         marker="o",
         markersize=3.2,
         label=label,
+    )
+
+
+def draw_reference(
+    axis: plt.Axes,
+    points: list[tuple[int, float]] | list[tuple[int, float, float]],
+    *,
+    color: str,
+    smooth: bool,
+    linestyle: str | tuple[int, tuple[int, ...]],
+    marker: str | None = None,
+    markevery: int | None = None,
+) -> None:
+    steps = [point[0] for point in points]
+    values = [point[1] for point in points]
+    if smooth:
+        values = moving_mean(values)
+    axis.plot(
+        steps,
+        values,
+        color=color,
+        linewidth=1.4,
+        linestyle=linestyle,
+        marker=marker,
+        markersize=4.2 if marker else None,
+        markerfacecolor="white" if marker else None,
+        markeredgewidth=1.2 if marker else None,
+        markevery=markevery,
+        alpha=0.68,
+        zorder=1,
     )
 
 
@@ -280,14 +351,57 @@ def plot_switches(
     training: dict[str, list[tuple[int, float]]],
     base: tuple[int, float, float],
     evaluation: dict[str, list[tuple[int, float, float]]],
+    *,
+    reference_training: dict[str, list[tuple[int, float]]] | None = None,
+    reference_evaluation: dict[str, list[tuple[int, float]]] | None = None,
+    view: str = "default",
 ) -> None:
-    figure, axes = plt.subplots(3, 2, figsize=(13.2, 13.1), sharex=True, sharey=True)
+    with_references = reference_training is not None and reference_evaluation is not None
+    share_y = view != "second_half_zoom"
+    figure, axes = plt.subplots(3, 2, figsize=(13.2, 13.1), sharex=True, sharey=share_y)
     figure.subplots_adjust(
-        left=0.075, right=0.985, top=0.87, bottom=0.07, hspace=0.34, wspace=0.12
+        left=0.075, right=0.985, top=0.84, bottom=0.07, hspace=0.38, wspace=0.12
     )
 
     for row, weight in enumerate(("0.05", "0.5", "1.0")):
         train_axis, eval_axis = axes[row]
+        if with_references:
+            draw_reference(
+                train_axis,
+                reference_training["rlonly"],
+                color=COLORS["reference_rl"],
+                smooth=False,
+                linestyle=(0, (6, 3)),
+                marker="o",
+                markevery=5,
+            )
+            draw_reference(
+                train_axis,
+                reference_training[ALWAYS_EVAL_BY_WEIGHT[weight]],
+                color=COLORS["reference_echo"],
+                smooth=False,
+                linestyle=(0, (2, 3)),
+                marker="D",
+                markevery=5,
+            )
+            draw_reference(
+                eval_axis,
+                reference_evaluation["rlonly"],
+                color=COLORS["reference_rl"],
+                smooth=False,
+                linestyle=(0, (6, 3)),
+                marker="o",
+                markevery=1,
+            )
+            draw_reference(
+                eval_axis,
+                reference_evaluation[ALWAYS_EVAL_BY_WEIGHT[weight]],
+                color=COLORS["reference_echo"],
+                smooth=False,
+                linestyle=(0, (2, 3)),
+                marker="D",
+                markevery=1,
+            )
         for run, (label, color_key) in SWITCH_TRAIN[weight].items():
             draw_training(
                 train_axis,
@@ -303,36 +417,119 @@ def plot_switches(
                 color=COLORS[color_key],
             )
 
-        style_axis(train_axis, switch=True)
-        style_axis(eval_axis, switch=True)
-        train_axis.set_title(
-            f"ECHO {weight} - training reward",
-            fontsize=13.5,
+        if view == "zero_to_one":
+            axis_options = {
+                "switch": True,
+                "ylim": (0, 1),
+                "yticks": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
+            }
+            style_axis(train_axis, **axis_options)
+            style_axis(eval_axis, **axis_options)
+        elif view == "second_half_zoom":
+            style_axis(
+                train_axis,
+                switch=False,
+                xlim=(50, 100),
+                ylim=(0.50, 0.80),
+                xticks=[50, 60, 70, 80, 90, 100],
+                yticks=[0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80],
+            )
+            style_axis(
+                eval_axis,
+                switch=False,
+                xlim=(50, 100),
+                ylim=(0.68, 0.90),
+                xticks=[50, 60, 70, 80, 90, 100],
+                yticks=[0.70, 0.75, 0.80, 0.85, 0.90],
+            )
+        else:
+            style_axis(train_axis, switch=True)
+            style_axis(eval_axis, switch=True)
+        train_axis.text(
+            -0.115,
+            0.5,
+            f"ECHO {weight}",
+            transform=train_axis.transAxes,
+            rotation=90,
+            ha="center",
+            va="center",
+            fontsize=12.5,
             fontweight="bold",
             color=TEXT,
+            clip_on=False,
         )
-        eval_axis.set_title(
-            f"ECHO {weight} - held-out evaluation",
-            fontsize=13.5,
-            fontweight="bold",
-            color=TEXT,
-        )
-        train_axis.set_ylabel("Progress reward", fontsize=10.5, color=TEXT)
+        if row < 2:
+            train_axis.set_xlabel("")
+            eval_axis.set_xlabel("")
 
-    handles, labels = axes[0, 0].get_legend_handles_labels()
+    axes[0, 0].set_title(
+        "Training reward",
+        fontsize=14,
+        fontweight="bold",
+        color=TEXT,
+        pad=10,
+    )
+    axes[0, 1].set_title(
+        "Held-out evaluation",
+        fontsize=14,
+        fontweight="bold",
+        color=TEXT,
+        pad=10,
+    )
+
+    handles = [
+        Line2D([0], [0], color=COLORS["rl_echo"], linewidth=2.35),
+        Line2D([0], [0], color=COLORS["echo_rl"], linewidth=2.35),
+    ]
+    labels = ["RL to ECHO", "ECHO to RL"]
+    if with_references:
+        handles.extend(
+            [
+                Line2D(
+                    [0],
+                    [0],
+                    color=COLORS["reference_rl"],
+                    linewidth=1.4,
+                    linestyle=(0, (6, 3)),
+                    marker="o",
+                    markersize=4.2,
+                    markerfacecolor="white",
+                    markeredgewidth=1.2,
+                    alpha=0.68,
+                ),
+                Line2D(
+                    [0],
+                    [0],
+                    color=COLORS["reference_echo"],
+                    linewidth=1.4,
+                    linestyle=(0, (2, 3)),
+                    marker="D",
+                    markersize=4.2,
+                    markerfacecolor="white",
+                    markeredgewidth=1.2,
+                    alpha=0.68,
+                ),
+            ]
+        )
+        labels.extend(
+            ["Always RL (3-run mean)", "Always ECHO (3-run mean)"]
+        )
     figure.legend(
         handles,
         labels,
         loc="upper center",
         bbox_to_anchor=(0.5, 0.915),
-        ncol=2,
+        ncol=4 if with_references else 2,
         frameon=False,
         fontsize=10.5,
         handlelength=3.0,
-        columnspacing=2.5,
+        columnspacing=1.8 if with_references else 2.5,
     )
+    title = "Switch schedules at step 50"
+    if view == "second_half_zoom":
+        title += " · steps 50–100"
     figure.suptitle(
-        "Switch schedules at step 50",
+        title,
         x=0.075,
         y=0.975,
         ha="left",
@@ -349,7 +546,123 @@ def plot_switches(
         fontsize=9.5,
         color=MUTED,
     )
-    save_figure(figure, "switch_curves")
+    if with_references:
+        figure.text(
+            0.5,
+            0.882,
+            "Gray circles: always RL · Purple diamonds: always ECHO at the matching weight",
+            ha="center",
+            va="top",
+            fontsize=9.2,
+            color=MUTED,
+        )
+    name = "switch_curves_with_three_run_means" if with_references else "switch_curves"
+    if view == "zero_to_one":
+        name += "_zero_to_one"
+    elif view == "second_half_zoom":
+        name += "_second_half_zoom"
+    save_figure(figure, name)
+    plt.close(figure)
+
+
+def save_switch_eval_summary(
+    evaluation: dict[str, list[tuple[int, float, float]]],
+) -> None:
+    rows: list[list[str]] = []
+    for weight in ("0.05", "0.5", "1.0"):
+        for variant, (label, _) in SWITCH_EVAL[weight].items():
+            points = evaluation[variant]
+            best_after = max(
+                (point for point in points if point[0] > 50),
+                key=lambda point: point[1],
+            )
+            final = max(points, key=lambda point: point[0])
+            rows.append(
+                [
+                    weight,
+                    label.replace(" to ", " → "),
+                    f"{best_after[1]:.3f}",
+                    str(best_after[0]),
+                    f"{final[1]:.3f}",
+                ]
+            )
+
+    figure, axis = plt.subplots(figsize=(12.8, 5.3))
+    axis.axis("off")
+    axis.set_position([0.015, 0.09, 0.97, 0.665])
+    figure.text(
+        0.015,
+        0.94,
+        "Switch Schedule Evaluation Summary",
+        fontsize=22,
+        fontweight="bold",
+        color="#1f2d3d",
+    )
+    figure.text(
+        0.015,
+        0.86,
+        "Eval = mean of three rollouts",
+        fontsize=12.5,
+        color=MUTED,
+    )
+    table = axis.table(
+        cellText=rows,
+        colLabels=[
+            "ECHO weight",
+            "Schedule",
+            "Best eval",
+            "Best step",
+            "Final eval",
+        ],
+        cellLoc="right",
+        colLoc="right",
+        bbox=[0, 0, 1, 1],
+        colWidths=[0.17, 0.24, 0.21, 0.17, 0.21],
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(11.5)
+    table.scale(1, 1.65)
+    for (row, column), cell in table.get_celld().items():
+        cell.set_edgecolor("#dbe2ea")
+        cell.set_linewidth(0.7)
+        if row == 0:
+            cell.set_facecolor("#203043")
+            cell.get_text().set_color("white")
+            cell.get_text().set_weight("bold")
+        else:
+            group_fill = {
+                1: "#edf5fa",
+                2: "#edf5fa",
+                3: "#fdf4e8",
+                4: "#fdf4e8",
+                5: "#edf6f0",
+                6: "#edf6f0",
+            }
+            cell.set_facecolor(group_fill[row])
+            cell.get_text().set_color("#253447")
+        cell.PAD = 0.04
+    table[(0, 1)].get_text().set_ha("left")
+    for row in range(1, len(rows) + 1):
+        table[(row, 1)].get_text().set_ha("left")
+    for row, column in ((4, 2), (4, 4), (5, 2), (5, 4)):
+        table[(row, column)].get_text().set_weight("bold")
+
+    figure.text(
+        0.015,
+        0.025,
+        "Note: ECHO 0.05 schedules are effectively tied; both best and final eval differ by only 0.002.",
+        fontsize=10.5,
+        color=MUTED,
+    )
+
+    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+    figure.savefig(
+        FIGURE_DIR / "switch_eval_summary.png",
+        dpi=220,
+        bbox_inches="tight",
+        pad_inches=0.08,
+        facecolor="white",
+    )
     plt.close(figure)
 
 
@@ -357,8 +670,34 @@ def main() -> None:
     training = load_training()
     always_eval = load_always_eval()
     base, switch_eval = load_switch_eval()
+    three_run_training = load_three_run_means(THREE_RUN_TRAIN_CSV)
+    three_run_eval = load_three_run_means(THREE_RUN_EVAL_CSV)
+    save_switch_eval_summary(switch_eval)
     plot_always_on(training, always_eval)
     plot_switches(training, base, switch_eval)
+    plot_switches(
+        training,
+        base,
+        switch_eval,
+        reference_training=three_run_training,
+        reference_evaluation=three_run_eval,
+    )
+    plot_switches(
+        training,
+        base,
+        switch_eval,
+        reference_training=three_run_training,
+        reference_evaluation=three_run_eval,
+        view="zero_to_one",
+    )
+    plot_switches(
+        training,
+        base,
+        switch_eval,
+        reference_training=three_run_training,
+        reference_evaluation=three_run_eval,
+        view="second_half_zoom",
+    )
 
 
 if __name__ == "__main__":

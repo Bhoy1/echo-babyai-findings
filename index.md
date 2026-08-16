@@ -1,78 +1,124 @@
 ---
 layout: default
-title: "ECHO on BabyAI: Updated Findings"
-description: "A working report on ECHO auxiliary training in BabyAI."
+title: "ECHO on BabyAI"
+description: "Three-run results for ECHO auxiliary training and objective switching in BabyAI."
 ---
 
-> **Working draft:** The analysis and figure presentation are still being revised.
+# ECHO on BabyAI
 
-# ECHO on BabyAI: Updated Findings
-
-Date: 2026-08-09
 
 ## Introduction
 
-ECHO has already shown promise in coding-style tasks, where predicting environment feedback or terminal outputs can provide a useful auxiliary signal alongside policy optimization. We wanted to test whether the same idea transfers to more "world model" style tasks, where the model interacts with embodied-AI environments and receives structured observations after each action. This work used Prime-RL, which added ECHO as a built-in algorithm in July 2026 (["prime-rl gets an Algorithms layer"](https://www.primeintellect.ai/blog/algorithms-layer)).
+[ECHO](https://arxiv.org/abs/2605.24517) has shown promise in coding-style tasks, where predicting environment feedback or terminal output provides a dense auxiliary signal alongside reinforcement learning. We wanted to test whether the same idea transfers to a more embodied setting: an agent acting in a small world, receiving a new observation after every action, and learning from both reward and the environment.
 
-## Task Selection and Experiments
+We study this question on BabyAI using Prime-RL's built-in ECHO algorithm. The main experiment compares RL against three different ECHO weights across three independent 100-step training runs. We also run experiments that change from RL to ECHO, or ECHO to RL, at step 50.
 
-We scoped the task to BabyAI from [AgentBoard](https://github.com/hkust-nlp/AgentBoard): grid-world instruction-following tasks where the agent receives observations and must complete navigation/object-manipulation goals.
+All three ECHO variants finish above RL-only in mean held-out reward, and stronger ECHO weights substantially reduce the number and length of candidate rollouts required to fill a training batch.
+
+## Task and setup
+
+We use BabyAI from [AgentBoard](https://github.com/hkust-nlp/AgentBoard), a collection of grid-world instruction-following tasks involving navigation and object manipulation. The policy emits short text actions such as `turn left`, `move forward`, `pickup red ball 0`, or `toggle blue door 1`; the environment returns a text observation after each action.
 
 ![Examples of three BabyAI levels](figures/babyai-grid-example.png)
 
 *Examples of three BabyAI levels. Source: Figure 1 from Chevalier-Boisvert et al., ["BabyAI: A Platform to Study the Sample Efficiency of Grounded Language Learning"](https://arxiv.org/abs/1810.08272), ICLR 2019.*
 
-We ran Qwen3.5-9B for 100 training steps and evaluated each checkpoint on 28 held-out tasks with three rollout replicates. Reported uncertainty is the mean plus or minus one standard deviation across the three replicate means.
+We use 84 training tasks and 28 held-out tasks, preserving the same 3:1 split within each BabyAI subtask family. The main configuration is:
 
-- **Four always-on objectives:** RL-only, and ECHO at weight 0.05, 0.5, and 1.0, each run start-to-finish under a single objective.
-- **Six switch schedules:** ECHO weight 0.05, 0.5, and 1.0, each run both as RL → ECHO and ECHO → RL, switching objectives at step 50.
+| Setting | Value |
+| --- | --- |
+| Model | Qwen3.5-9B |
+| Training length | 100 policy updates |
+| Retained training batch | 128 rollouts |
+| Rollouts per task group | 8 |
+| Maximum interaction length | 20 turns |
+| Sampling temperature | 0.7 |
+| Thinking | Disabled |
+| Held-out evaluation | 28 tasks × 3 rollout replicates per checkpoint |
+
+We ran three independent training runs for each objective: RL-only, ECHO 0.05, ECHO 0.5, and ECHO 1.0. Each plotted checkpoint reward first averages the three evaluation replicates for that training run. The bold curve then reports the mean across the three independent training runs, and the band shows plus or minus one sample standard deviation across those runs.
+
+The switch schedules are different: each direction and ECHO weight currently has one training run. Their evaluation bands therefore show variation across the three evaluation replicates, not variation across independent training runs.
+
+## ECHO objective
+
+RL updates the assistant action tokens using reward-derived advantages. ECHO retains that policy objective and adds a next-token prediction loss over environment-observation tokens that arrive after assistant actions. The model sees those observations as context during rollout; the auxiliary loss teaches it to predict them during training.
+
+Conceptually, a trajectory is trained in two complementary ways:
+
+```text
+Assistant: move forward          <- RL policy objective
+Environment: You see a red ball <- ECHO observation objective
+Assistant: pickup red ball 0     <- RL policy objective
+Environment: You picked it up    <- ECHO observation objective
+```
+
+## ECHO vs. RL
+
+![Three independent always-on training runs](figures/three_independent_runs_training_eval.png)
+
+*Training reward uses a five-step moving mean. Bold lines are means across three independent training runs; faint lines show the individual runs; bands are plus or minus one sample standard deviation across runs.*
+
+![Held-out evaluation summary](figures/always_on_eval_summary.png)
+
+Across three independent training runs, all three ECHO variants finish above RL-only in mean held-out reward. ECHO 0.05 reaches its best mean earliest, at step 60. ECHO 1.0 improves more gradually, reaches the strongest final mean, and has the smallest across-run variation at step 100.
+
+RL-only also has the largest run-to-run variation at the final checkpoint: its SD is 0.053, compared with 0.036 for ECHO 0.05, 0.035 for ECHO 0.5, and 0.011 for ECHO 1.0. In this BabyAI experiment, every tested ECHO weight achieves a higher peak and final mean reward than RL-only while also producing a more consistent final result across runs.
+
+These findings are promising but scoped. We tested one model size in one embodied AI environment using 84 training tasks and 28 held-out tasks, with three independent training runs per objective. The results do not establish that ECHO improves embodied AI generally. Instead, they provide initial evidence that ECHO merits study beyond coding tasks and motivate replication across more environments, model families, and dataset sizes.
+
+## Objective switching at step 50
+
+The switch experiments test whether RL and ECHO can hand off to one another without interfering with previously learned behavior, and whether one objective is more useful early or late in training. Each schedule starts from scratch and switches objective at step 50. Because these are separate stochastic runs, their first 50 steps are not expected to match the three-run always-on references exactly.
+
+![Complete switch-schedule reward curves](figures/switch_curves_with_three_run_means_zero_to_one.png)
+
+*Complete 100-step runs. Blue is RL → ECHO, orange is ECHO → RL, gray circles show the always-RL three-run mean, and purple diamonds show the always-ECHO three-run mean at the matching weight.*
+
+![Post-switch reward curves](figures/switch_curves_with_three_run_means_second_half_zoom.png)
+
+*Post-switch steps 50–100 using tighter reward axes. Colored evaluation bands are plus or minus one SD across three evaluation replicates within the single switch run.*
+
+![Switch schedule evaluation summary](figures/switch_eval_summary.png)
+
+The effect of objective order changes with ECHO weight. At 0.05, the schedules are effectively tied: their best post-switch evaluations are 0.821 and 0.823, and they finish at 0.784 and 0.782. At 0.5, ECHO → RL is much stronger. At 1.0, the result reverses: RL → ECHO reaches 0.865 at step 95 and finishes at 0.853, while ECHO → RL peaks at 0.809 after the switch and finishes at 0.746.
+
+These results show that switching between RL and ECHO is feasible, but they do not establish a generally better ordering or switch point. Five of the six schedules reach a post-switch peak above both matching non-switched references, but only two finish above both references at the final checkpoint. This suggests that combining the objectives at different phases of training may be useful, while also showing that the gains are not consistently maintained. However, each switch schedule was run only once and only on BabyAI. Replicated experiments across multiple switch points and benchmarks are needed to distinguish a genuine scheduling effect from ordinary training-run variation and determine whether the preferred schedule depends on the environment.
+
+## Turn length and rollout efficiency
+
+The turn metrics below describe retained trainable rollouts: the trajectories that were ultimately used for policy updates.
+
+![Turn length and turn-limit rate over training](figures/behavior_tables/three_independent_runs_turns_plot.png)
+
+*Lines show five-step moving means over retained trainable rollouts. Bands are plus or minus one sample standard deviation across three independent runs.*
+
+RL-only trajectories average 18.56 turns, and 83.4% reach the 20-turn limit. Both measurements fall as ECHO weight increases. At ECHO 1.0, trajectories average 17.17 turns and reach the limit 70.7% of the time. All objectives produce longer trajectories later in training, but ECHO delays the shift toward the turn limit.
+
+Prime-RL generates candidate rollouts until enough trainable samples remain for an update. The next plot shows the percentage of generated candidates that were retained and used for training.
+
+![Usable rollout percentage over training](figures/behavior_tables/three_independent_runs_filtering_plot.png)
+
+*Lines show the five-step moving mean of retained trainable rollouts divided by generated candidates. Bands are plus or minus one sample standard deviation across three independent runs.*
+
+The usable-sample rate increases monotonically with ECHO weight. Across all 100 steps, it rises from 15.4% ± 1.3% for RL-only to 25.9% ± 2.2% for ECHO 1.0. Correspondingly, the number of extra candidates generated per update falls from 708.9 ± 73.6 to 368.9 ± 43.8.
+
+Three pre-batch filters were active: zero advantage, repetition, and gibberish. The logs record only aggregate generated and retained counts, so we cannot attribute rejected rollouts to individual filters. Qualitative inspection found no obvious repetition or gibberish in the saved trajectories, making zero advantage the likely dominant source of filtering. However, this is an inference rather than a directly measured result.
+
+## What we learned
+
+1. **Always-on ECHO improves mean held-out reward in this BabyAI setting.** All tested weights finish above RL-only across three independent runs, with ECHO 1.0 producing the strongest final result.
+2. **ECHO changes rollout economics as well as reward.** Higher ECHO weights consistently increase the retained rollout fraction, reduce the number of generated candidates required per update, and reduce the number of turns the model takes.
+3. **Switching can raise peak performance, but the benefit is not consistently sustained.** Five of six schedules exceed both matching non-switched references at a post-switch checkpoint, but only two finish above both. The preferred order also reverses between ECHO weights 0.5 and 1.0, so these single runs do not establish a general ordering rule.
 
 
-## Always-on objectives
+## Reproducibility artifacts
 
-![Always-on training and held-out evaluation reward](figures/always_on_curves.png)
+The BabyAI environment can be found on Prime's Environment Hub.
 
-![Always-on objectives table](figures/table_alwayson.png)
+***CAN INCLUDE THIS WE DON'T HAVE TOO***
+The public Hugging Face archives contain adapters, full trainer checkpoints, orchestrator progress, configs, logs, raw training trajectories, and checkpoint evaluations:
 
-All three ECHO weights beat RL-only on both peak and final eval reward, and RL-only is also visibly the noisiest and least monotone of the four on held-out eval. ECHO 0.05 is the most stable of the three ECHO weights, with SD roughly an order of magnitude tighter than the others at both peak and final. ECHO 1.0 reaches the highest final reward but with much wider variance (± 0.045).
-
-The training-reward panel tells a slightly different story: RL-only actually tracks competitively with the ECHO runs through step 80, and ECHO 0.05's train reward drops sharply after step 80 even though its eval reward stays flat. That train/eval decoupling at low lambda is worth investigating further, including whether it reflects overfitting or a shift in the task composition of the training updates.
-
-## Switch schedules (phase runs, switch at step 50)
-
-![Switch-schedule training and held-out evaluation reward](figures/switch_curves.png)
-
-![Switch schedules table](figures/table_switch.png)
-
-RL → ECHO at λ = 1.0 is the best run in the full sweep on both peak and final eval reward, and it has the tightest variance of any switch run (± 0.010 on both). It clears every always-on variant on final reward (0.853 vs. 0.819 for the best always-on run).
-
-Which order wins depends on λ, and it isn't consistent:
-- At λ = 0.05, the two orders are essentially tied on final reward (0.784 vs. 0.782); ECHO → RL peaks slightly higher at the same step but decays more afterward.
-- At λ = 0.5, ECHO → RL wins clearly on final reward (0.832 vs. 0.752).
-- At λ = 1.0, RL → ECHO wins clearly on final reward (0.853 vs. 0.746) — the opposite direction from λ = 0.5.
-
-The eval curves make the λ = 1.0 case the most visually distinct: RL → ECHO climbs through the second half of training and finishes near 0.85, while ECHO → RL plateaus and drifts down toward 0.74–0.78 after the switch. At λ = 0.05 and 0.5 the two orders track each other closely through the switch point and only separate modestly afterward.
-
-### Working interpretation
-
-The switch experiments were designed to test whether ECHO and RL interfere with one another and whether their ordering matters. When combined with RL, ECHO adds a dense auxiliary training signal over environment-observation tokens, while the RL objective updates the policy using reward-derived advantages. Switching objectives therefore lets us ask whether observation prediction helps develop useful representations before RL, whether it provides a useful complementary signal after RL, and whether changing objectives disrupts behavior learned during the first phase.
-
-Combining ECHO with RL at the appropriate stage could help overcome optimization plateaus, accelerate learning, or reach better final performance. These experiments provide initial evidence about objective compatibility and ordering, while the rollout-efficiency results below suggest a separate potential benefit.
-
-## Turn and rollout-efficiency findings
-
-![Turn length](figures/table_turns.png)
-
-RL-only hit the turn limit on nearly every training rollout by the second half of training (95.3% at steps 51–75). ECHO delayed this most strongly at weight 1.0, whose overall rate was roughly 13 percentage points lower than RL-only, though all four runs trend toward longer, more turn-limited trajectories as training progresses.
-
-### Rollout filtering overhead
-
-"Extra rollouts" below is `generated candidates - trainable rollouts`: the total volume filtered out before each update. The three enforced pre-batch filters were zero advantage, gibberish, and repetition. Gibberish and repetition filtering are intended to guard against model collapse, and we saw no visible signs of collapse in the saved trajectories. However, the logs report only aggregate generated and trainable counts, not rejection counts for each filter.
-
-![Rollout filtering overhead table](figures/table_filtering.png)
-
-Filtering overhead falls monotonically with ECHO weight: RL-only generated 7,807 more filtered rollouts than ECHO 0.05 over the full 100 steps, 21,918 more than ECHO 0.5, and 35,429 more than ECHO 1.0. The retained fraction nearly doubles from RL-only (15.7%) to ECHO 1.0 (27.7%).
-
-### Working interpretation
-
-RL-only's higher rollout cost comes from generating more candidates per update, and its training rollouts are longer and more likely to hit the turn limit. Higher ECHO weight is associated with both a larger trainable fraction and fewer turn-limited episodes. Together, these associations suggest a potential compute-efficiency advantage for ECHO on BabyAI.
+- [Independent run 1 results and evaluations](https://huggingface.co/datasets/bhoy/agentboard-babyai-v1-v071-always-on-switch50)
+- [Independent run 1 full checkpoints](https://huggingface.co/datasets/bhoy/agentboard-babyai-v1-v071-four-run-checkpoints)
+- [Independent runs 2 and 3](https://huggingface.co/datasets/bhoy/agentboard-babyai-v1-v071-independent-runs-2-3)
