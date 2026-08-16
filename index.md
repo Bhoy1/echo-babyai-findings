@@ -69,7 +69,7 @@ These findings are promising but scoped. We tested one model size in one embodie
 
 ## Objective switching at step 50
 
-The switch experiments test whether RL and ECHO can hand off to one another without interfering with previously learned behavior, and whether one objective is more useful early or late in training. Each schedule starts from scratch and switches objective at step 50. Because these are separate stochastic runs, their first 50 steps are not expected to match the three-run always-on references exactly.
+The switch experiments test whether RL and ECHO can hand off to one another without interfering with previously learned behavior, and whether one objective is more useful early or late in training. Each schedule starts from scratch and switches objective at step 50. Because these are separate stochastic runs, their first 50 steps are not expected to match the three-run non-switched references exactly.
 
 ![Complete switch-schedule reward curves](figures/switch_curves_with_three_run_means_zero_to_one.png)
 
@@ -87,7 +87,7 @@ These results show that switching between RL and ECHO is feasible, but they do n
 
 ## Turn length and rollout efficiency
 
-The turn metrics below describe retained trainable rollouts: the trajectories that were ultimately used for policy updates.
+The turn metrics below describe trainable rollouts: the trajectories that were ultimately used for policy updates.
 
 ![Turn length and turn-limit rate over training](figures/behavior_tables/three_independent_runs_turns_plot.png)
 
