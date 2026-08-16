@@ -122,3 +122,19 @@ The public Hugging Face archives contain adapters, full trainer checkpoints, orc
 - [Independent run 1 results and evaluations](https://huggingface.co/datasets/bhoy/agentboard-babyai-v1-v071-always-on-switch50)
 - [Independent run 1 full checkpoints](https://huggingface.co/datasets/bhoy/agentboard-babyai-v1-v071-four-run-checkpoints)
 - [Independent runs 2 and 3](https://huggingface.co/datasets/bhoy/agentboard-babyai-v1-v071-independent-runs-2-3)
+
+## Acknowledgments
+
+This work was completed during my Prime-RL residency. I am grateful to Sebastian Müller for his guidance and support throughout the project.
+
+## Citation
+
+```bibtex
+@article{hoy2026echo,
+  title   = "ECHO on BabyAI",
+  author  = "Hoy, Billy",
+  year    = "2026",
+  month   = "August",
+  url     = "https://bhoy1.github.io/echo-babyai-findings/"
+}
+```
