@@ -125,14 +125,14 @@ The public Hugging Face archives contain adapters, full trainer checkpoints, orc
 
 ## Acknowledgments
 
-This work was completed during my Prime-RL residency. I am grateful to Sebastian Müller for his guidance and support throughout the project.
+This work was completed during the Prime-RL residency. Sebastian Müller (@omouamoua) advised the project, helped shape the experimental design, and contributed to the writing. Billy Hoy led the experimentation, writing, and analysis.
 
 ## Citation
 
 ```bibtex
 @article{hoy2026echo,
   title   = "ECHO on BabyAI",
-  author  = "Hoy, Billy",
+  author  = "Hoy, Billy and Müller, Sebastian",
   year    = "2026",
   month   = "August",
   url     = "https://bhoy1.github.io/echo-babyai-findings/"
