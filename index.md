@@ -125,7 +125,7 @@ The public Hugging Face archives contain adapters, full trainer checkpoints, orc
 
 ## Acknowledgments
 
-This work was completed during the Prime-RL residency. Sebastian Müller (@omouamoua) advised the project, helped shape the experimental design, and contributed to the writing. Billy Hoy led the experimentation, writing, and analysis.
+This work was completed during the Prime-RL residency. Sebastian Müller (@omouamoua) advised the project, contributed greatly to the design and framing of the study, and helped with the writing. Billy Hoy led the experimentation, writing, and analysis.
 
 ## Citation
 
