@@ -1,10 +1,10 @@
 ---
 layout: default
-title: "ECHO on Turn-Constrained BabyAI"
+title: "ECHO on BabyAI"
 description: "ECHO auxiliary training and objective switching under a strict 20-turn BabyAI interaction budget."
 ---
 
-# ECHO on Turn-Constrained BabyAI
+# ECHO on BabyAI
 
 
 ## Introduction
@@ -169,7 +169,7 @@ This work was completed during the Prime-RL residency. Sebastian Müller ([@omou
 
 ```bibtex
 @article{hoy2026echo,
-  title   = "ECHO on Turn-Constrained BabyAI",
+  title   = "ECHO on BabyAI",
   author  = "Hoy, Billy and Müller, Sebastian",
   year    = "2026",
   month   = "August",
