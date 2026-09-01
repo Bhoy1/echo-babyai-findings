@@ -503,16 +503,17 @@ def plot_switches(
         else:
             style_axis(train_axis, switch=True)
             style_axis(eval_axis, switch=True)
-        add_switch_phase_labels(
-            train_axis,
-            weight=weight,
-            post_switch_only=view == "second_half_zoom",
-        )
-        add_switch_phase_labels(
-            eval_axis,
-            weight=weight,
-            post_switch_only=view == "second_half_zoom",
-        )
+        if view != "zero_to_one":
+            add_switch_phase_labels(
+                train_axis,
+                weight=weight,
+                post_switch_only=view == "second_half_zoom",
+            )
+            add_switch_phase_labels(
+                eval_axis,
+                weight=weight,
+                post_switch_only=view == "second_half_zoom",
+            )
         train_axis.text(
             -0.115,
             0.5,
@@ -614,16 +615,6 @@ def plot_switches(
         fontsize=9.5,
         color=MUTED,
     )
-    if with_references:
-        figure.text(
-            0.5,
-            0.882,
-            "Gray circles: always RL · Purple diamonds: always ECHO at the matching weight",
-            ha="center",
-            va="top",
-            fontsize=9.2,
-            color=MUTED,
-        )
     name = "switch_curves_with_three_run_means" if with_references else "switch_curves"
     if view == "zero_to_one":
         name += "_zero_to_one"
@@ -714,14 +705,6 @@ def save_switch_eval_summary(
         table[(row, 1)].get_text().set_ha("left")
     for row, column in ((4, 2), (4, 4), (5, 2), (5, 4)):
         table[(row, column)].get_text().set_weight("bold")
-
-    figure.text(
-        0.015,
-        0.025,
-        "Note: ECHO 0.05 schedules are effectively tied; both best and final eval differ by only 0.002.",
-        fontsize=10.5,
-        color=MUTED,
-    )
 
     FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     figure.savefig(

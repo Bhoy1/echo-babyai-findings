@@ -16,7 +16,7 @@ FIGURE_DIR = ROOT / "figures"
 OUTPUT_DATA = ROOT / "data" / "three_independent_runs"
 
 LABELS = {
-    "rlonly": "RL-only",
+    "rlonly": "RL",
     "echo005": "ECHO 0.05",
     "echo050": "ECHO 0.5",
     "echo100": "ECHO 1.0",
@@ -180,22 +180,22 @@ def save_eval_summary(combined: dict[str, list[tuple[int, float, float]]]) -> No
             ]
         )
 
-    figure, axis = plt.subplots(figsize=(12.6, 3.7))
+    figure, axis = plt.subplots(figsize=(10.8, 3.0))
     axis.axis("off")
-    axis.set_position([0.015, 0.04, 0.97, 0.67])
+    axis.set_position([0.025, 0.055, 0.95, 0.70])
     figure.text(
-        0.015,
-        0.94,
+        0.025,
+        0.925,
         "Held-out Evaluation Summary",
-        fontsize=22,
+        fontsize=17,
         fontweight="bold",
         color="#1f2d3d",
     )
     figure.text(
-        0.015,
-        0.84,
+        0.025,
+        0.825,
         "Mean ± sample SD across three independent training runs",
-        fontsize=12.5,
+        fontsize=10.5,
         color=MUTED,
     )
     table = axis.table(
@@ -209,11 +209,11 @@ def save_eval_summary(combined: dict[str, list[tuple[int, float, float]]]) -> No
         cellLoc="right",
         colLoc="right",
         bbox=[0, 0, 1, 1],
-        colWidths=[0.24, 0.30, 0.18, 0.28],
+        colWidths=[0.23, 0.30, 0.16, 0.31],
     )
     table.auto_set_font_size(False)
-    table.set_fontsize(12)
-    table.scale(1, 1.65)
+    table.set_fontsize(10.5)
+    table.scale(1, 1.35)
     for (row, column), cell in table.get_celld().items():
         cell.set_edgecolor("#dbe2ea")
         cell.set_linewidth(0.7)
@@ -226,7 +226,7 @@ def save_eval_summary(combined: dict[str, list[tuple[int, float, float]]]) -> No
             cell.get_text().set_color("#253447")
             if column == 0:
                 cell.get_text().set_weight("bold")
-        cell.PAD = 0.04
+        cell.PAD = 0.03
     for row in range(1, len(rows) + 1):
         table[(row, 0)].get_text().set_ha("left")
     table[(0, 0)].get_text().set_ha("left")
@@ -291,8 +291,8 @@ def main() -> None:
     write_combined(OUTPUT_DATA / "eval_reward_mean_sd.csv", eval_combined)
     save_eval_summary(eval_combined)
 
-    figure, axes = plt.subplots(1, 2, figsize=(13.2, 5.2))
-    figure.subplots_adjust(top=0.72, bottom=0.12, left=0.08, right=0.98, wspace=0.18)
+    figure, axes = plt.subplots(1, 2, figsize=(13.2, 4.7))
+    figure.subplots_adjust(top=0.79, bottom=0.13, left=0.08, right=0.98, wspace=0.18)
     plot_panel(axes[0], training_runs, training_combined, smooth=True)
     plot_panel(axes[1], eval_runs, eval_combined, smooth=False)
     for axis in axes:
@@ -306,19 +306,10 @@ def main() -> None:
         handles,
         labels,
         loc="upper center",
-        bbox_to_anchor=(0.5, 0.82),
+        bbox_to_anchor=(0.5, 0.975),
         ncol=4,
         frameon=False,
         fontsize=10,
-    )
-    figure.suptitle("BabyAI", fontsize=18, fontweight="bold", color=TEXT, y=0.985)
-    figure.text(
-        0.5,
-        0.91,
-        "Qwen3.5-9B | bold: mean | band: +/- SD across runs | faint: individual runs",
-        ha="center",
-        color=MUTED,
-        fontsize=9.5,
     )
     FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     for suffix in ("png", "svg"):
