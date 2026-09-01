@@ -104,27 +104,19 @@ The step-50 schedules finish close together. `ECHO50 → RL150` peaks at `0.857`
 
 ## Pure ECHO (SFT) objective switching
 
-Standard ECHO retains the RL policy objective while adding observation-token prediction. Under the same 20-turn limit, we also tested a more isolated ablation: during an ECHO (SFT) phase, the reward-weighted policy and mismatch-KL terms are disabled, leaving only supervised next-token prediction over environment observations. The rollout pipeline and pre-batch filters remain active. These are single training runs, and each evaluation checkpoint reports the mean and standard deviation across three rollout replicates over 28 held-out tasks.
+Standard ECHO retains the RL policy objective while adding observation-token prediction. We also tested an ECHO (SFT) phase, the RL reward policy is removed, leaving only supervised next-token prediction over environment observations. These are single training runs, and each evaluation checkpoint reports the mean and standard deviation across three rollout replicates over 28 held-out tasks.
 
-![Training reward for pure RL and ECHO SFT switches](figures/sft_switch_training.png)
+![Training and held-out evaluation for pure RL and ECHO SFT switches](figures/sft_switch_training_eval.png)
 
-*Two 200-step schedules switching objective at step 100. Labels at the top of each phase identify the active training objective.*
 
-![Held-out evaluation for pure RL and ECHO SFT switches](figures/sft_switch_eval.png)
-
-The direction of the effect is clear in both schedules. Under ECHO (SFT) alone, held-out reward falls during the first 100 steps; switching to RL then recovers it. In the reverse direction, RL first raises held-out reward, while the subsequent ECHO (SFT) phase gradually gives back part of that gain.
-
-![Overlaid held-out evaluation for pure RL and ECHO SFT switches](figures/sft_switch_eval_overlay.png)
-
-The overlaid view makes the asymmetry easier to see. `ECHO (SFT) → RL` falls from `0.522` at initialization to `0.395` at the switch, then reaches a post-switch peak of `0.798` and finishes at `0.733`. `RL → ECHO (SFT)` reaches `0.796` at the switch and finishes at `0.746`. Pure observation prediction therefore does not replace RL in this setting, although the model remains recoverable when RL is restored.
+The direction of the effect is clear in both schedules. Under ECHO (SFT) alone, held-out reward falls during the first 100 steps; switching to RL then recovers it. `ECHO (SFT) → RL` falls from `0.522` at initialization to `0.395` at the switch, then reaches a post-switch peak of `0.798` and finishes at `0.733`. In the reverse direction, RL first raises held-out reward to `0.796` at the switch, while the subsequent ECHO (SFT) phase gradually gives back part of that gain and finishes at `0.746`. Pure observation prediction therefore does not replace RL in this setting, although the model remains recoverable when RL is restored.
 
 We also alternated the objectives every 50 steps:
 
 ![Four-phase RL and ECHO SFT schedule](figures/sft_four_phase_training_eval.png)
 
-*One 200-step run with the schedule RL50 → ECHO (SFT)50 → RL50 → ECHO (SFT)50.*
 
-The first ECHO (SFT) phase reduces held-out reward from `0.821` at step 50 to `0.631` at step 100. RL then recovers it to `0.804` at step 150, and the final ECHO (SFT) phase finishes at `0.790`. This single run suggests that pure SFT phases can preserve some learned behavior but are less reliable than the combined ECHO objective used in the main experiments. More repetitions would be required to determine whether alternating phases offers any consistent advantage.
+The first ECHO (SFT) phase reduces held-out reward from `0.821` at step 50 to `0.631` at step 100. RL then recovers it to `0.804` at step 150, and the final ECHO (SFT) phase finishes at `0.790`. 
 
 ## Turn constraint and rollout efficiency
 
