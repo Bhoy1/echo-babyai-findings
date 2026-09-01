@@ -200,6 +200,64 @@ def style_axis(
         )
 
 
+def add_switch_phase_labels(
+    axis: plt.Axes,
+    *,
+    weight: str,
+    post_switch_only: bool = False,
+) -> None:
+    """Label the active objective for both schedules inside each phase."""
+    phases = (
+        (
+            0.5 if post_switch_only else 0.25,
+            (
+                ("RL → ECHO:  ECHO " + weight, "rl_echo"),
+                ("ECHO → RL:  RL", "echo_rl"),
+            ),
+        ),
+    )
+    if not post_switch_only:
+        phases = (
+            (
+                0.25,
+                (
+                    ("RL → ECHO:  RL", "rl_echo"),
+                    ("ECHO → RL:  ECHO " + weight, "echo_rl"),
+                ),
+            ),
+            (
+                0.75,
+                (
+                    ("RL → ECHO:  ECHO " + weight, "rl_echo"),
+                    ("ECHO → RL:  RL", "echo_rl"),
+                ),
+            ),
+        )
+
+    for x_position, labels in phases:
+        for y_position, (label, color_key) in zip(
+            (0.965, 0.905), labels, strict=True
+        ):
+            axis.text(
+                x_position,
+                y_position,
+                label,
+                transform=axis.transAxes,
+                ha="center",
+                va="top",
+                color=COLORS[color_key],
+                fontsize=8.2,
+                fontweight="semibold",
+                zorder=8,
+                bbox={
+                    "facecolor": "white",
+                    "edgecolor": "none",
+                    "alpha": 0.82,
+                    "pad": 1.2,
+                },
+            )
+
+
 def draw_training(
     axis: plt.Axes,
     points: list[tuple[int, float]],
@@ -445,6 +503,16 @@ def plot_switches(
         else:
             style_axis(train_axis, switch=True)
             style_axis(eval_axis, switch=True)
+        add_switch_phase_labels(
+            train_axis,
+            weight=weight,
+            post_switch_only=view == "second_half_zoom",
+        )
+        add_switch_phase_labels(
+            eval_axis,
+            weight=weight,
+            post_switch_only=view == "second_half_zoom",
+        )
         train_axis.text(
             -0.115,
             0.5,
