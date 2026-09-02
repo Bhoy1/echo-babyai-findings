@@ -253,12 +253,7 @@ def save_turn_table(
 
 
 def save_turn_plot(path: Path, rows: list[dict[str, Any]]) -> None:
-    figure, axes = plt.subplots(1, 2, figsize=(14.4, 6.7))
-    figure_header(
-        figure,
-        "Turn Length and Turn Limit Rate",
-        "Max Turn Limit = 20 steps",
-    )
+    figure, axes = plt.subplots(1, 2, figsize=(13.2, 4.7))
 
     metric_specs = [
         ("turns_mean", "Mean turn length", "Mean turns", (10, 20), [10, 12, 14, 16, 18, 20]),
@@ -334,12 +329,12 @@ def save_turn_plot(path: Path, rows: list[dict[str, Any]]) -> None:
         legend_handles,
         legend_labels,
         loc="upper center",
-        bbox_to_anchor=(0.5, 0.80),
+        bbox_to_anchor=(0.5, 0.98),
         ncol=4,
         frameon=False,
         fontsize=10.5,
     )
-    figure.subplots_adjust(left=0.075, right=0.985, bottom=0.12, top=0.68, wspace=0.22)
+    figure.subplots_adjust(left=0.075, right=0.985, bottom=0.13, top=0.78, wspace=0.22)
     path.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(path, dpi=220, bbox_inches="tight", facecolor="white")
     plt.close(figure)
