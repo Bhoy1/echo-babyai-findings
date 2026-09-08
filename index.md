@@ -102,11 +102,11 @@ Action:
 
 The BabyAI harness parses and executes only the first line. The first action can therefore still earn reward even when the remainder of the completion is malformed. The complete assistant response nevertheless remains in the saved trajectory and subsequent model context, increasing both generated tokens and the prompt length of later turns.
 
-![Held-out evaluation token usage](figures/token_metrics/heldout_token_metrics_three_run_by_quarter.png)
+![Held-out environment-observation, assistant-output, and total token usage](figures/token_metrics/heldout_observation_output_total_tokens.png)
 
-*Values are mean tokens processed per held-out trajectory, with variation measured across three independent training runs. Turns are model calls per trajectory, and each step window pools evaluations from every five-step checkpoint over 28 held-out tasks with three rollout replicates. Context components are counted each time they are processed, so the system message, initial prompt, and earlier observations can be counted again on later turns. Total tokens also include prior-action history and chat-template overhead.*
+*Bars show mean tokens per held-out trajectory, and error bars show plus or minus one sample standard deviation across three independent training runs. Each step window pools evaluations from every five-step checkpoint over 28 held-out tasks with three rollout replicates. Environment observations are counted each time they are processed, so earlier observations can be counted again on later turns. Total tokens also include the system message, initial prompt, prior-action history, and chat-template overhead.*
 
-The large visible-output counts at higher ECHO weights are driven by a minority of transcript-like completions rather than uniformly longer action strings. They should not be interpreted as evidence that the model learned an accurate simulator. 
+Environment-observation processing remains broadly similar across objectives. The large assistant-output counts at higher ECHO weights are driven by a minority of transcript-like completions rather than uniformly longer action strings. They should not be interpreted as evidence that the model learned an accurate simulator.
 
 ![Held-out trajectories hitting the output limit](figures/token_metrics/heldout_output_limit_behavior.png)
 
@@ -126,9 +126,9 @@ The non-switched runs reach similar peak held-out rewards, but on different time
 
 The single 200-step ECHO run also shows that the transcript-like output behavior can be considered a policy drift that is not permanent. Its output-limit rate peaked at 50% of held-out trajectories at step 45, largely disappeared by step 85, and was zero after step 150. During steps 176–200, ECHO averaged 9.6 turns and 16,155 processed tokens per trajectory, compared with 11.7 turns and 19,948 tokens for RL. This shows evidence of recovery within these single sampled runs. 
 
-![Held-out token usage through 200 steps](figures/token_metrics/extended_200_token_metrics_by_quarter.png)
+![Held-out environment-observation, assistant-output, and total token usage through 200 steps](figures/token_metrics/extended_200_observation_output_total_tokens.png)
 
-*Values are mean tokens processed per held-out trajectory from one training run per objective. Each checkpoint evaluates 28 held-out tasks with three rollout replicates. Context components are counted again whenever they are processed on later turns, and total tokens include prior-action history and chat-template overhead.*
+*Bars show mean tokens per held-out trajectory from one training run per objective. Each step window pools five-step checkpoints, and each checkpoint evaluates 28 held-out tasks with three rollout replicates. Environment observations are counted again whenever they are processed on later turns. Total tokens also include the system message, initial prompt, prior-action history, and chat-template overhead.*
 
 Both step-100 schedules remain viable after changing objectives. `RL100 → ECHO100` peaks at `0.827` at step 30, before the switch, and finishes at `0.790`. `ECHO100 → RL100` peaks at `0.847` at step 125, after the switch, and finishes at `0.779`.
 
