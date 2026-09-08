@@ -62,7 +62,7 @@ We use 84 training tasks and 28 held-out tasks, preserving the same 3:1 split wi
 
 The 20-turn cap was limiting. A hard turn cap acts as a coarse length penalty because a policy that needs additional actions cannot continue collecting progress. The reward comparison therefore reflects both task learning and the ability to make progress within a fixed interaction budget. It may favor policies that solve tasks in fewer turns, and RL could match or exceed ECHO if given a larger budget.
 
-This constrained setting is still practically meaningful. Inference costs and fixed agent budgets make length efficiency important. ["True Agents Model the World"](https://www.primeintellect.ai/blog/true-agents-model-the-world) similarly studies ECHO  **Need to go look back at blog to see what was written again**.
+This constrained setting is still practically meaningful. Inference costs and fixed agent budgets make length efficiency important. ["True Agents Model the World"](https://www.primeintellect.ai/blog/true-agents-model-the-world) found that ECHO runs also tended to use fewer turns under a large turn budget, suggesting that this behavior is not limited to tightly capped runs. However, our BabyAI results do not establish whether the reward advantage would persist if the 20-turn cap were relaxed.
 
 We use three related experiments to separate the main questions:
 
