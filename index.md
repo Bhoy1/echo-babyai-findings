@@ -86,21 +86,58 @@ RL also has the largest run-to-run variation at the final checkpoint: its SD is 
 
 These findings are promising but scoped. We tested one model size in one embodied AI environment using 84 training tasks and 28 held-out tasks, with three independent training runs per objective. They provide evidence that ECHO handles this length-constrained embodied setting well and motivate replication across turn limits, environments, model families, and dataset sizes.
 
+## Output behavior and token usage
+
+Every policy was allowed up to 1,024 tokens per action even though BabyAI requires only one short action phrase. At higher ECHO weights, the trained policy sometimes continued the trajectory format inside its own response, generating imagined observations and additional actions instead of stopping after its first action.
+
+An abridged held-out example from ECHO 1.0 is:
+
+```text
+go to blue locked door 1                         <- executed by the environment
+Observation: There is a blue locked door ...    <- imagined by the model
+Action: toggle and go through blue locked door 1
+Observation: There is a yellow closed door ...
+Action:
+```
+
+The BabyAI harness parses and executes only the first line. The first action can therefore still earn reward even when the remainder of the completion is malformed. The complete assistant response nevertheless remains in the saved trajectory and subsequent model context, increasing both generated tokens and the prompt length of later turns.
+
+![Held-out evaluation token usage](figures/token_metrics/heldout_token_metrics_three_run_by_quarter.png)
+
+*Values are mean tokens processed per held-out trajectory, with variation measured across three independent training runs. Turns are model calls per trajectory, and each step window pools evaluations from every five-step checkpoint over 28 held-out tasks with three rollout replicates. Context components are counted each time they are processed, so the system message, initial prompt, and earlier observations can be counted again on later turns. Total tokens also include prior-action history and chat-template overhead.*
+
+The large visible-output counts at higher ECHO weights are driven by a minority of transcript-like completions rather than uniformly longer action strings. They should not be interpreted as evidence that the model learned an accurate simulator. 
+
+![Held-out trajectories hitting the output limit](figures/token_metrics/heldout_output_limit_behavior.png)
+
+*Percentage of held-out trajectories containing at least one 1,024-token assistant completion. Each five-step checkpoint evaluates 28 held-out tasks with three rollout replicates; values are pooled into 25-step windows and then averaged across three independent training runs.*
+
+This behavior could be constrained at inference by stopping generation at the first newline, enforcing a one-action output grammar, or using a substantially smaller completion limit. The present experiments preserve the same 1,024-token limit for RL and ECHO, which exposes that ECHO can induce trajectory continuation or role confusion without necessarily destroying the useful policy encoded in the first action.
+
 ## Extending the schedules to 200 steps
 
 We next ran six standard ECHO/RL schedules for 200 training steps: `RL200`, `ECHO 1.0 200`, `RL50 → ECHO150`, `ECHO50 → RL150`, `RL100 → ECHO100`, and `ECHO100 → RL100`. Unlike the main 100-step comparison, each schedule has only one training run. Every evaluation checkpoint covers 28 held-out tasks with three rollout replicates per task, so the bands show variation across evaluation replicates, not across independent training runs.
+
+The two step-50 schedules specifically test asymmetric warmups. `RL50 → ECHO150` asks whether a short RL warmup can establish basic action behavior before a longer ECHO phase jointly improves the policy and observation model. `ECHO50 → RL150` asks whether a short ECHO warmup can establish useful environment representations before a longer RL phase refines the policy.
 
 ![Non-switched RL and ECHO over 200 steps](figures/standard_echo_200_always_on.png)
 
 The non-switched runs reach similar peak held-out rewards, but on different timelines. RL reaches `0.801` at step 25, then loses much of that gain and finishes at `0.713`. ECHO 1.0 peaks later, reaching `0.807` at step 85, and holds that performance through the end of training with a final reward of `0.805`.
 
-![RL and ECHO switching at step 100](figures/standard_echo_200_switch100.png)
+The single 200-step ECHO run also shows that the transcript-like output behavior can be considered a policy drift that is not permanent. Its output-limit rate peaked at 50% of held-out trajectories at step 45, largely disappeared by step 85, and was zero after step 150. During steps 176–200, ECHO averaged 9.6 turns and 16,155 processed tokens per trajectory, compared with 11.7 turns and 19,948 tokens for RL. This shows evidence of recovery within these single sampled runs. 
+
+![Held-out token usage through 200 steps](figures/token_metrics/extended_200_token_metrics_by_quarter.png)
+
+*Values are mean tokens processed per held-out trajectory from one training run per objective. Each checkpoint evaluates 28 held-out tasks with three rollout replicates. Context components are counted again whenever they are processed on later turns, and total tokens include prior-action history and chat-template overhead.*
 
 Both step-100 schedules remain viable after changing objectives. `RL100 → ECHO100` peaks at `0.827` at step 30, before the switch, and finishes at `0.790`. `ECHO100 → RL100` peaks at `0.847` at step 125, after the switch, and finishes at `0.779`.
 
-![RL and ECHO switching at step 50 over 200 steps](figures/standard_echo_200_switch50.png)
+![RL and ECHO switching at step 100](figures/standard_echo_200_switch100.png)
 
 The step-50 schedules finish close together. `ECHO50 → RL150` peaks at `0.857` at step 195 and finishes at `0.823`, while `RL50 → ECHO150` peaks at `0.839` at the step 50 and finishes at `0.818`.
+
+![RL and ECHO switching at step 50 over 200 steps](figures/standard_echo_200_switch50.png)
+
 
 ## Pure ECHO (SFT) objective switching
 
@@ -120,6 +157,8 @@ The first ECHO (SFT) phase reduces held-out reward from `0.821` at step 50 to `0
 
 ## Turn constraint and rollout efficiency
 
+Three pre-batch filters were active: zero advantage, repetition, and gibberish. The logs record only aggregate generated and retained counts, so we cannot attribute rejected rollouts to individual filters. Qualitative inspection found no obvious repetition or gibberish in the saved trajectories, making zero advantage the likely dominant source of filtering. 
+
 The turn metrics below describe trainable rollouts: the trajectories that were ultimately used for policy updates.
 
 ![Turn length and turn-limit rate over training](figures/behavior_tables/three_independent_runs_turns_plot.png)
@@ -128,9 +167,9 @@ The turn metrics below describe trainable rollouts: the trajectories that were u
 
 RL-only trajectories average 18.56 turns, and 83.4% reach the 20-turn limit. Both measurements fall as ECHO weight increases. At ECHO 1.0, trajectories average 17.17 turns and reach the limit 70.7% of the time. All objectives produce longer trajectories later in training, but ECHO delays the shift toward the turn limit.
 
-This is both a result and the central confounder. The cap is binding much more often for RL, so the reward curves partly measure whether a policy can complete or advance a task within 20 actions. They do not tell us how the same policies would rank if RL were allowed to continue acting. RL may be equally strong or stronger at a larger turn budget.
+The cap is binding much more often for RL, so the reward curves partly measure whether a policy can complete or advance a task within 20 actions. They do not tell us how the same policies would rank if RL were allowed to continue acting. RL may be equally strong or stronger at a larger turn budget.
 
-Viewed another way, the hard cap is a form of length penalty: it assigns no value to progress that would occur after turn 20. It is a coarse penalty, but coping with it is useful because real agents operate under latency and inference-compute constraints. The defensible conclusion from these runs is therefore that ECHO copes better with this particular length constraint, not that ECHO unconditionally dominates RL on BabyAI.
+Viewed another way, the hard cap is a form of length penalty: it assigns no value to progress that would occur after turn 20. It is a coarse penalty, but coping with it is useful in real world agents. The defensible conclusion from these runs is therefore that ECHO copes better with this particular length constraint, not that ECHO unconditionally dominates RL on BabyAI.
 
 Prime-RL generates candidate rollouts until enough trainable samples remain for an update. The next plot shows the percentage of generated candidates that were retained and used for training.
 
@@ -138,28 +177,19 @@ Prime-RL generates candidate rollouts until enough trainable samples remain for 
 
 *Lines show the five-step moving mean of retained trainable rollouts divided by generated candidates. Bands are plus or minus one sample standard deviation across three independent runs.*
 
-The usable-sample rate increases monotonically with ECHO weight. Across all 100 steps, it rises from 15.4% ± 1.3% for RL-only to 25.9% ± 2.2% for ECHO 1.0. Correspondingly, the number of extra candidates generated per update falls from 708.9 ± 73.6 to 368.9 ± 43.8. This efficiency result is also conditional on the turn cap: policies that fail to produce useful reward variation within 20 turns are more likely to yield unusable groups.
-
-Three pre-batch filters were active: zero advantage, repetition, and gibberish. The logs record only aggregate generated and retained counts, so we cannot attribute rejected rollouts to individual filters. Qualitative inspection found no obvious repetition or gibberish in the saved trajectories, making zero advantage the likely dominant source of filtering. However, this is an inference rather than a directly measured result.
+The usable-sample rate increases monotonically with ECHO weight. Across all 100 steps, it rises from 15.4% ± 1.3% for RL-only to 25.9% ± 2.2% for ECHO 1.0. Correspondingly, the number of extra candidates generated per update falls from 708.9 ± 73.6 to 368.9 ± 43.8. 
 
 ## What we learned
 
 1. **Under a 20-turn constraint, ECHO improves mean held-out reward.** All tested weights finish above RL across three independent runs, with ECHO 1.0 producing the strongest final result.
 2. **ECHO copes better with the hard length penalty.** Higher ECHO weights consistently reduce turn usage, reach the turn limit less often, increase the retained rollout fraction, and reduce the number of generated candidates required per update.
 3. **RL and ECHO can hand off without an obvious persistent collapse.** The single 200-step schedules remain viable after switching at step 50 or 100, but they do not establish a generally better ordering or switch point.
-4. **The unconstrained comparison remains open.** Because RL reaches the turn cap substantially more often, these experiments cannot determine whether ECHO would retain its advantage with a larger interaction budget.
+4. **Observation prediction alone is not sufficient.** In the pure ECHO (SFT) ablation, held-out reward declined when reward-weighted policy updates were disabled and recovered when RL resumed. The positive ECHO results therefore appear to depend on combining observation prediction with the RL policy objective.
 
 
 ## Reproducibility artifacts
 
 The BabyAI environment can be found on Prime's Environment Hub.
-
-***CAN INCLUDE THIS WE DON'T HAVE TOO***
-The public Hugging Face archives contain adapters, full trainer checkpoints, orchestrator progress, configs, logs, raw training trajectories, and checkpoint evaluations:
-
-- [Independent run 1 results and evaluations](https://huggingface.co/datasets/bhoy/agentboard-babyai-v1-v071-always-on-switch50)
-- [Independent run 1 full checkpoints](https://huggingface.co/datasets/bhoy/agentboard-babyai-v1-v071-four-run-checkpoints)
-- [Independent runs 2 and 3](https://huggingface.co/datasets/bhoy/agentboard-babyai-v1-v071-independent-runs-2-3)
 
 ## Acknowledgments
 
@@ -172,7 +202,7 @@ This work was completed during the Prime-RL residency. Sebastian Müller ([@omou
   title   = "ECHO on BabyAI",
   author  = "Hoy, Billy and Müller, Sebastian",
   year    = "2026",
-  month   = "August",
+  month   = "September",
   url     = "https://bhoy1.github.io/echo-babyai-findings/"
 }
 ```
