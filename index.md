@@ -9,11 +9,11 @@ description: "ECHO auxiliary training and objective switching under a strict 20-
 
 ## Introduction
 
-[ECHO](https://arxiv.org/abs/2605.24517) has shown promise in coding-style tasks, where predicting environment feedback or terminal output provides a dense auxiliary signal alongside reinforcement learning. We wanted to test whether the same idea transfers to a more embodied setting: an agent acting in a small world, receiving a new observation after every action, and learning from both reward and the environment.
+[ECHO](https://arxiv.org/abs/2605.24517) has shown promise in coding-style tasks, where predicting environment feedback or terminal output provides a dense auxiliary signal alongside reinforcement learning. We wanted to test whether the same idea would transfer to a more embodied setting: an agent acting in a small world, receiving a new observation after every action, and learning from both reward and the environment.
 
-We study this question on BabyAI using Prime-RL's built-in ECHO algorithm under a strict 20-turn interaction budget. The main experiment compares RL training with three ECHO variants, distinguished by the coefficient applied to the separately normalized observation-prediction loss, across three independent training runs. We also run experiments that change from RL to ECHO, or ECHO to RL. Finally, we isolate the observation-prediction objective by alternating between pure RL and pure ECHO (SFT) during training.
+We studied this question on BabyAI using Prime-RL's built-in ECHO algorithm under a strict 20-turn interaction budget. The main experiment compared RL training with three ECHO variants, distinguished by the coefficient applied to the separately normalized observation-prediction loss, across three independent training runs. We also ran experiments that changed from RL to ECHO, or ECHO to RL. Finally, we isolated the observation-prediction objective by alternating between pure RL and pure ECHO (SFT) during training.
 
-All three ECHO variants finish above RL in mean held-out reward, and stronger ECHO weights substantially reduce the number and length of candidate rollouts required to fill a training batch under the constrained 20 turn limit.
+All three ECHO variants produced higher final mean held-out rewards than RL, and stronger ECHO weights substantially reduced both average trajectory length and the number of candidate rollouts required to fill a training batch under the 20-turn constraint.
 
 ## ECHO objective
 
