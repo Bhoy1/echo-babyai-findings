@@ -98,9 +98,13 @@ blockquote p {
   justify-content: center;
   gap: 4px 10px;
   margin: 30px 0 18px;
+  padding: 18px 20px;
   overflow-x: auto;
+  border: 1px solid var(--border);
+  background: #f6f8fa;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.55em;
+  line-height: 1.45;
 }
 
 .equation-term {
