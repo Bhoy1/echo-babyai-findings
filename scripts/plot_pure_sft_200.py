@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Render pure ECHO (SFT) switch figures in the blog's shared style."""
+"""Render observation-only SFT switch figures in the blog's shared style."""
 
 from __future__ import annotations
 
 import csv
+import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -12,9 +13,11 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data" / "pure_sft_200"
+STANDARD_DATA_DIR = ROOT / "data" / "standard_echo_200"
 FIGURE_DIR = ROOT / "figures"
 
 RL_COLOR = "#333B45"
+ECHO_COLOR = "#43805E"
 SFT_COLOR = "#6F5BD3"
 TEXT = "#20252B"
 MUTED = "#66717D"
@@ -118,6 +121,91 @@ def load_switch_eval() -> dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]]:
     }
 
 
+def load_non_switched_references() -> dict[str, dict[str, np.ndarray]]:
+    variants = json.loads(
+        (STANDARD_DATA_DIR / "always_on.json").read_text(encoding="utf-8")
+    )["variants"]
+    return {
+        variant: {
+            "train_steps": np.asarray(values["train_steps"], dtype=int),
+            "train_rewards": np.asarray(values["train_rewards"], dtype=float),
+            "eval_steps": np.asarray(values["eval_steps"], dtype=int),
+            "eval_means": np.asarray(values["eval_means"], dtype=float),
+        }
+        for variant, values in variants.items()
+        if variant in {"rlonly", "echo100"}
+    }
+
+
+def plot_non_switched_references(axes: np.ndarray) -> None:
+    references = load_non_switched_references()
+    for variant, label, color, linestyle, marker in (
+        (
+            "rlonly",
+            "Non-switched RL (separate run)",
+            RL_COLOR,
+            (0, (6, 3)),
+            "o",
+        ),
+        (
+            "echo100",
+            "Non-switched ECHO 1.0 (separate run)",
+            ECHO_COLOR,
+            (0, (2, 3)),
+            "D",
+        ),
+    ):
+        values = references[variant]
+        axes[0].plot(
+            values["train_steps"],
+            moving_mean(values["train_rewards"]),
+            color=color,
+            linewidth=1.35,
+            linestyle=linestyle,
+            alpha=0.58,
+            label=label,
+            zorder=1,
+        )
+        axes[1].plot(
+            values["eval_steps"],
+            values["eval_means"],
+            color=color,
+            linewidth=1.35,
+            linestyle=linestyle,
+            marker=marker,
+            markersize=3.0,
+            markerfacecolor="white",
+            markeredgewidth=0.9,
+            alpha=0.58,
+            label=label,
+            zorder=1,
+        )
+
+
+def add_legend(
+    figure: plt.Figure,
+    axis: plt.Axes,
+    primary_labels: list[str],
+) -> None:
+    handles, labels = axis.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles, strict=True))
+    reference_labels = [
+        "Non-switched RL (separate run)",
+        "Non-switched ECHO 1.0 (separate run)",
+    ]
+    order = [*primary_labels, *reference_labels]
+    figure.legend(
+        [by_label[label] for label in order],
+        order,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.98),
+        ncol=len(order),
+        frameon=False,
+        fontsize=8.7,
+        columnspacing=1.5,
+    )
+
+
 def plot_switch_training_eval() -> None:
     training = load_switch_training()
     evaluation = load_switch_eval()
@@ -125,7 +213,7 @@ def plot_switch_training_eval() -> None:
         (
             "echo_to_rl",
             "echo_sft100_to_rl100",
-            "ECHO (SFT) → RL",
+            "SFT-only → RL",
             SFT_COLOR,
             "D",
             "-",
@@ -133,7 +221,7 @@ def plot_switch_training_eval() -> None:
         (
             "rl_to_echo",
             "rl100_to_echo_sft100",
-            "RL → ECHO (SFT)",
+            "RL → SFT-only",
             RL_COLOR,
             "o",
             "--",
@@ -158,6 +246,8 @@ def plot_switch_training_eval() -> None:
         weight="bold",
         pad=12,
     )
+
+    plot_non_switched_references(axes)
 
     for (
         training_key,
@@ -224,15 +314,10 @@ def plot_switch_training_eval() -> None:
         )
     axes[0].set_ylabel("Mean progress reward", color=TEXT, fontsize=10)
 
-    handles, labels = axes[0].get_legend_handles_labels()
-    figure.legend(
-        handles,
-        labels,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 0.975),
-        ncol=2,
-        frameon=False,
-        fontsize=10,
+    add_legend(
+        figure,
+        axes[0],
+        ["SFT-only → RL", "RL → SFT-only"],
     )
     save_figure(figure, "sft_switch_training_eval")
 
@@ -263,12 +348,14 @@ def plot_four_phase() -> None:
     train_steps, train_rewards, eval_steps, eval_means, eval_sds = load_four_phase()
     phases = [
         (0, 50, "RL"),
-        (50, 100, "ECHO (SFT)"),
+        (50, 100, "SFT-only"),
         (100, 150, "RL"),
-        (150, 200, "ECHO (SFT)"),
+        (150, 200, "SFT-only"),
     ]
     figure, axes = plt.subplots(1, 2, figsize=(13.2, 4.7), sharey=True)
-    figure.subplots_adjust(top=0.82, bottom=0.13, left=0.08, right=0.98, wspace=0.18)
+    figure.subplots_adjust(top=0.79, bottom=0.13, left=0.08, right=0.98, wspace=0.18)
+
+    plot_non_switched_references(axes)
 
     axes[0].plot(train_steps, train_rewards, color=SFT_COLOR, linewidth=0.9, alpha=0.18)
     axes[0].plot(
@@ -276,6 +363,8 @@ def plot_four_phase() -> None:
         moving_mean(train_rewards),
         color=SFT_COLOR,
         linewidth=2.35,
+        label="Alternating RL / SFT-only",
+        zorder=3,
     )
     axes[1].fill_between(
         eval_steps,
@@ -292,6 +381,8 @@ def plot_four_phase() -> None:
         linewidth=2.35,
         marker="D",
         markersize=3.4,
+        label="Alternating RL / SFT-only",
+        zorder=3,
     )
     for axis in axes:
         add_phases(axis, phases)
@@ -305,6 +396,7 @@ def plot_four_phase() -> None:
         fontsize=13,
         weight="bold",
     )
+    add_legend(figure, axes[0], ["Alternating RL / SFT-only"])
     save_figure(figure, "sft_four_phase_training_eval")
 
 

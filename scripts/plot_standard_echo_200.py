@@ -146,9 +146,42 @@ def plot_figure(
     output_stem: str,
     *,
     switch_step: int | None = None,
+    references: list[Series] | None = None,
 ) -> None:
     figure, axes = plt.subplots(1, 2, figsize=(13.2, 4.7))
     figure.subplots_adjust(top=0.79, bottom=0.13, left=0.08, right=0.98, wspace=0.18)
+
+    if references:
+        for item, linestyle in zip(
+            references,
+            ((0, (6, 3)), (0, (2, 3))),
+            strict=True,
+        ):
+            label = f"Non-switched {item.label} (separate run)"
+            axes[0].plot(
+                item.train_steps,
+                moving_mean(item.train_rewards),
+                color=item.color,
+                linewidth=1.35,
+                linestyle=linestyle,
+                alpha=0.58,
+                label=label,
+                zorder=1,
+            )
+            axes[1].plot(
+                item.eval_steps,
+                item.eval_means,
+                color=item.color,
+                linewidth=1.35,
+                linestyle=linestyle,
+                marker=item.marker,
+                markersize=3.0,
+                markerfacecolor="white",
+                markeredgewidth=0.9,
+                alpha=0.58,
+                label=label,
+                zorder=1,
+            )
 
     for item in series:
         axes[0].plot(
@@ -210,14 +243,23 @@ def plot_figure(
     )
 
     handles, labels = axes[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles, strict=True))
+    active_labels = [item.label for item in series]
+    reference_labels = (
+        [f"Non-switched {item.label} (separate run)" for item in references]
+        if references
+        else []
+    )
+    order = [*active_labels, *reference_labels]
     figure.legend(
-        handles,
-        labels,
+        [by_label[label] for label in order],
+        order,
         loc="upper center",
         bbox_to_anchor=(0.5, 0.975),
-        ncol=len(series),
+        ncol=len(order),
         frameon=False,
-        fontsize=10,
+        fontsize=8.7 if references else 10,
+        columnspacing=1.5,
     )
 
     for suffix in ("png", "svg"):
@@ -232,41 +274,52 @@ def plot_figure(
 
 
 def main() -> None:
-    plot_figure(always_on_series(), "standard_echo_200_always_on")
+    non_switched = always_on_series()
+    plot_figure(non_switched, "standard_echo_200_always_on")
 
     switch100 = [
         series_from_csvs(
-            label="RL100 → ECHO100",
+            label="RL (100) → ECHO (100)",
             color=RL_COLOR,
             marker="o",
             training_path=DATA_DIR / "switch100_rl_echo_training.csv",
             eval_path=DATA_DIR / "switch100_rl_echo_eval.csv",
         ),
         series_from_csvs(
-            label="ECHO100 → RL100",
+            label="ECHO (100) → RL (100)",
             color=ECHO_COLOR,
             marker="D",
             training_path=DATA_DIR / "switch100_echo_rl_training.csv",
             eval_path=DATA_DIR / "switch100_echo_rl_eval.csv",
         ),
     ]
-    plot_figure(switch100, "standard_echo_200_switch100", switch_step=100)
+    plot_figure(
+        switch100,
+        "standard_echo_200_switch100",
+        switch_step=100,
+        references=non_switched,
+    )
 
     switch50 = [
         grouped_series(
             schedule="rl50_echo150",
-            label="RL50 → ECHO150",
+            label="RL (50) → ECHO (150)",
             color=RL_COLOR,
             marker="o",
         ),
         grouped_series(
             schedule="echo50_rl150",
-            label="ECHO50 → RL150",
+            label="ECHO (50) → RL (150)",
             color=ECHO_COLOR,
             marker="D",
         ),
     ]
-    plot_figure(switch50, "standard_echo_200_switch50", switch_step=50)
+    plot_figure(
+        switch50,
+        "standard_echo_200_switch50",
+        switch_step=50,
+        references=non_switched,
+    )
 
 
 if __name__ == "__main__":

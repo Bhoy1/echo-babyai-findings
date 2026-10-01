@@ -11,21 +11,31 @@ description: "ECHO auxiliary training and objective switching under a strict 20-
 
 [ECHO](https://arxiv.org/abs/2605.24517) has shown promise in coding-style tasks, where predicting environment feedback or terminal output provides a dense auxiliary signal alongside reinforcement learning. We wanted to test whether the same idea would transfer to a more embodied setting: an agent acting in a small world, receiving a new observation after every action, and learning from both reward and the environment.
 
-We studied this question on BabyAI using Prime-RL's built-in ECHO algorithm under a strict 20-turn interaction budget. The main experiment compared RL training with three ECHO variants, distinguished by the coefficient applied to the separately normalized observation-prediction loss, across three independent training runs. We also ran experiments that changed from RL to ECHO, or ECHO to RL. Finally, we isolated the observation-prediction objective by alternating between pure RL and pure ECHO (SFT) during training.
+We studied this question on BabyAI using [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl)'s built-in ECHO algorithm in a deliberately constrained setting: each rollout had at most 20 interaction turns, and the model's explicit thinking mode was disabled. This emphasized short, action-oriented decision making and made interaction efficiency part of the experiment. We compared RL with three ECHO variants, using ECHO weights of 0.05, 0.5, and 1.0. For this main comparison, we ran three independent 100-step training runs per setting. In separate single-run experiments, we switched between RL and ECHO midway through 100-step training and at different points in extended 200-step schedules. We also ran single-run ablations that alternated RL with observation-only SFT to isolate the contribution of observation prediction.
 
-All three ECHO variants produced higher final mean held-out rewards than RL, and stronger ECHO weights substantially reduced both average trajectory length and the number of candidate rollouts required to fill a training batch under the 20-turn constraint.
+In the main comparison, all three ECHO variants produced higher final mean held-out rewards than RL, and stronger ECHO weights substantially reduced both average trajectory length and the number of candidate rollouts required to fill a training batch under the 20-turn constraint. The switching experiments showed that RL and ECHO could hand off without a persistent collapse, but did not establish a consistently better ordering or switch point. Observation-only SFT phases did not sustain task performance, indicating that observation prediction did not replace the RL signal in this setting.
 
 ## ECHO objective
 
-RL updates the assistant action tokens using reward derived advantages. ECHO retains that policy objective and adds a next-token prediction loss over environment-observation tokens that arrive after assistant actions. The model sees those observations as context during rollout; the auxiliary loss teaches it to predict them during training.
+RL updates the assistant action tokens using reward-derived advantages. ECHO retains that policy objective and adds a next-token prediction loss over environment-observation tokens that arrive after assistant actions. The model sees those observations as context during rollout; the auxiliary loss teaches it to predict them during training. Standard ECHO therefore combines both components in the same update rather than training only on environment outputs.
+
+<div class="equation" role="math" aria-label="ECHO loss equals GRPO loss plus lambda times supervised loss on observation tokens">
+  <span class="equation-term"><i>L</i><sub>ECHO</sub></span>
+  <span class="equation-term">=</span>
+  <span class="equation-term"><i>L</i><sub>GRPO</sub></span>
+  <span class="equation-term">+</span>
+  <span class="equation-term">&lambda; &middot; <i>L</i><sub>observation SFT</sub></span>
+</div>
+
+The GRPO term trains assistant action tokens, while the SFT term trains post-action environment-observation tokens. Each term is normalized by its own token count, and the ECHO weight <i>&lambda;</i> scales the observation-prediction term.
 
 Conceptually, a trajectory is trained in two complementary ways:
 
 ```text
-Assistant: move forward          <- RL policy objective
-Environment: You see a red ball <- ECHO observation objective
-Assistant: pickup red ball 0     <- RL policy objective
-Environment: You picked it up    <- ECHO observation objective
+Assistant: move forward          <- ECHO RL component (policy objective)
+Environment: You see a red ball <- ECHO SFT component (observation prediction)
+Assistant: pickup red ball 0     <- ECHO RL component (policy objective)
+Environment: You picked it up    <- ECHO SFT component (observation prediction)
 ```
 
 ## Task and setup
@@ -60,21 +70,18 @@ We use 84 training tasks and 28 held-out tasks, preserving the same 3:1 split wi
 | Thinking | Disabled |
 | Held-out evaluation | 28 tasks × 3 rollout replicates per checkpoint |
 
-The 20-turn cap was limiting. A hard turn cap acts as a coarse length penalty because a policy that needs additional actions cannot continue collecting progress. The reward comparison therefore reflects both task learning and the ability to make progress within a fixed interaction budget. It may favor policies that solve tasks in fewer turns, and RL could match or exceed ECHO if given a larger budget.
+With explicit thinking disabled, each decision was intended to map the partial observation and accumulated trajectory to a short action rather than an exposed chain-of-thought deliberation. Combined with the 20-turn cap, this made the experiment a test of action-oriented navigation under tight interaction and inference budgets. This setting is relevant to embodied and robotics-like agents, where response latency and action efficiency can matter alongside planning quality.
 
-This constrained setting is still practically meaningful. Inference costs and fixed agent budgets make length efficiency important. ["True Agents Model the World"](https://www.primeintellect.ai/blog/true-agents-model-the-world) found that ECHO runs also tended to use fewer turns under a large turn budget, suggesting that this behavior is not limited to tightly capped runs. However, our BabyAI results do not establish whether the reward advantage would persist if the 20-turn cap were relaxed.
+The turn cap acted as a coarse length penalty because a policy that required additional actions could not continue collecting progress. The reward comparison therefore reflected both task learning and the ability to make progress within a fixed interaction budget. This may favor policies that solve tasks in fewer turns, and RL could match or exceed ECHO if given a larger budget.
 
-We use three related experiments to separate the main questions:
 
-1. **RL versus ECHO:** We compare RL with ECHO weights 0.05, 0.5, and 1.0 to test whether observation prediction changes reward, training consistency, turn usage, and rollout efficiency, and whether those effects depend on its weight. This primary comparison uses three independent training runs per objective.
-2. **Extended 200-step schedules:** Using ECHO 1.0, the strongest final configuration in the primary experiment, we extend non-switched RL and ECHO as well as step-50 and step-100 switches to 200 updates. These single-run schedules test whether early gains persist, disappear, or emerge only after additional steps, and whether the objectives can hand off without destroying learned behavior.
-3. **Pure ECHO (SFT) phases:** We disable the RL policy objective during ECHO phases, leaving observation-token supervision as the training signal. These single-run ablations test whether observation prediction can support learning on its own and what happens when it alternates with pure RL.
-
-Every evaluation checkpoint covers the 28 held-out tasks with three rollout replicates per task. In the primary comparison, each checkpoint first averages those replicates within a training run; the bold curve then shows the mean across the three independent runs, and its band shows plus or minus one sample standard deviation across runs. All other experiments have one training run per configuration, so their evaluation bands show variation across rollout replicates rather than across independent runs.
+Despite this limitation, the constrained setting remains practically meaningful. Inference costs and fixed agent budgets make length efficiency important. ["True Agents Model the World"](https://www.primeintellect.ai/blog/true-agents-model-the-world) found that ECHO runs also tended to use fewer turns under a larger turn budget, suggesting that this behavior is not limited to tightly capped runs. However, our BabyAI results do not establish whether the reward advantage would persist if the 20-turn cap were relaxed.
 
 ## ECHO vs. RL
 
-![Three independent always-on training runs](figures/three_independent_runs_training_eval.png)
+We first compared RL with ECHO weights 0.05, 0.5, and 1.0 to test whether observation prediction changed reward, training consistency, turn usage, and rollout efficiency, and whether those effects depended on its weight. We ran each of the four objectives three times independently. At every evaluation checkpoint, each run was evaluated on all 28 held-out tasks with three rollout replicates per task. The bold curves below average the three independent training runs, and the bands show plus or minus one sample standard deviation across those runs.
+
+![Three independent non-switched training runs](figures/three_independent_runs_training_eval.png)
 
 *Training reward uses a five-step moving mean. Bold lines are means across three independent training runs; faint lines show the individual runs; bands are plus or minus one sample standard deviation across runs.*
 
@@ -114,46 +121,70 @@ Environment-observation processing remains broadly similar across objectives. Th
 
 This behavior could be constrained at inference by stopping generation at the first newline, enforcing a one-action output grammar, or using a substantially smaller completion limit. The present experiments preserve the same 1,024-token limit for RL and ECHO, which exposes that ECHO can induce trajectory continuation or role confusion without necessarily destroying the useful policy encoded in the first action.
 
+## Switching objectives after 50 steps
+
+After comparing fixed objectives, we asked whether RL and ECHO could hand off to one another during training. Each schedule ran for 100 updates and switched at the midpoint. We write `RL (50) → ECHO (50)` for 50 RL updates followed by 50 ECHO updates, and `ECHO (50) → RL (50)` for the reverse. Parenthesized numbers denote update counts, while the ECHO weight is stated separately. Standard ECHO still includes the RL policy objective; switching to ECHO adds the observation-prediction loss, while switching back to RL removes it.
+
+We tested both directions at ECHO weights 0.05, 0.5, and 1.0. Each schedule has one training run. Every evaluation checkpoint covers all 28 held-out tasks with three rollout replicates, so the evaluation bands show variation across rollout replicates rather than across independent training runs. The faint reference curves show the three-run means of the corresponding non-switched RL and ECHO objectives.
+
+![RL and ECHO switching after 50 steps](figures/switch_curves_with_three_run_means_zero_to_one.png)
+
+![Evaluation summary for RL and ECHO switches after 50 steps](figures/switch_eval_summary.png)
+
+The ordering effect depended on the ECHO weight. At 0.05, the two directions were effectively tied: their best post-switch evaluations were `0.821` and `0.823`, and they finished at `0.784` and `0.782`. At 0.5, `ECHO (50) → RL (50)` was stronger, finishing at `0.832` compared with `0.752` for `RL (50) → ECHO (50)`. At 1.0, the result reversed: `RL (50) → ECHO (50)` reached `0.865` at step 95 and finished at `0.853`, while `ECHO (50) → RL (50)` peaked at `0.809` after the switch and finished at `0.746`.
+
+These runs show that switching between RL and ECHO is feasible, but they do not establish a generally better ordering or switch point. Each schedule has only one training run, and the best direction changed with the ECHO weight. The result may also vary across benchmarks.
+
 ## Extending the schedules to 200 steps
 
-We next ran six standard ECHO/RL schedules for 200 training steps: `RL200`, `ECHO 1.0 200`, `RL50 → ECHO150`, `ECHO50 → RL150`, `RL100 → ECHO100`, and `ECHO100 → RL100`. Unlike the main 100-step comparison, each schedule has only one training run. Every evaluation checkpoint covers 28 held-out tasks with three rollout replicates per task, so the bands show variation across evaluation replicates, not across independent training runs.
+The 100-step experiments showed that the objectives could hand off without a universal collapse. We next used ECHO 1.0, the strongest final configuration in the primary comparison, to test whether the behavior persisted over 200 updates. Each schedule below has one training run, and every evaluation checkpoint again covers the 28 held-out tasks with three rollout replicates per task. The faint non-switched RL and ECHO 1.0 curves are from separate, independent runs and are shown only for comparison.
 
-The two step-50 schedules specifically test asymmetric warmups. `RL50 → ECHO150` asks whether a short RL warmup can establish basic action behavior before a longer ECHO phase jointly improves the policy and observation model. `ECHO50 → RL150` asks whether a short ECHO warmup can establish useful environment representations before a longer RL phase refines the policy.
+### Non-switched runs
+
+We first extended RL and ECHO 1.0 without changing objectives, giving each 200 updates. This tests whether the difference observed at 100 steps persists, disappears, or emerges differently with additional optimization.
 
 ![Non-switched RL and ECHO over 200 steps](figures/standard_echo_200_always_on.png)
 
 The non-switched runs reach similar peak held-out rewards, but on different timelines. RL reaches `0.801` at step 25, then loses much of that gain and finishes at `0.713`. ECHO 1.0 peaks later, reaching `0.807` at step 85, and holds that performance through the end of training with a final reward of `0.805`.
 
-The single 200-step ECHO run also shows that the transcript-like output behavior can be considered a policy drift that is not permanent. Its output-limit rate peaked at 50% of held-out trajectories at step 45, largely disappeared by step 85, and was zero after step 150. During steps 176–200, ECHO averaged 9.6 turns and 16,155 processed tokens per trajectory, compared with 11.7 turns and 19,948 tokens for RL. This shows evidence of recovery within these single sampled runs. 
+The 100-step experiments showed that higher ECHO weights could induce transcript-like continuations in the model’s output. In the separate 200-step ECHO 1.0 run, this behavior appeared temporary: the fraction of held-out trajectories that exhausted the output-token limit peaked at 50% at step 45, largely disappeared by step 85, and remained at zero after step 150. During steps 176–200, ECHO averaged 9.6 turns and 16,155 processed tokens per trajectory, compared with 11.7 turns and 19,948 tokens for RL. This single-run evidence suggests that the policy recovered from the output drift rather than remaining trapped in it.
 
 ![Held-out environment-observation, assistant-output, and total token usage through 200 steps](figures/token_metrics/extended_200_observation_output_total_tokens.png)
 
 *Bars show mean tokens per held-out trajectory from one training run per objective. Each step window pools five-step checkpoints, and each checkpoint evaluates 28 held-out tasks with three rollout replicates. Environment observations are counted again whenever they are processed on later turns. Total tokens also include the system message, initial prompt, prior-action history, and chat-template overhead.*
 
-Both step-100 schedules remain viable after changing objectives. `RL100 → ECHO100` peaks at `0.827` at step 30, before the switch, and finishes at `0.790`. `ECHO100 → RL100` peaks at `0.847` at step 125, after the switch, and finishes at `0.779`.
+### Equal-length phases
+
+We then repeated the midpoint switch over a longer horizon. `RL (100) → ECHO (100)` means 100 RL updates followed by 100 ECHO 1.0 updates; `ECHO (100) → RL (100)` reverses that order. This keeps the two phases equal in length while moving the switch from step 50 to step 100.
 
 ![RL and ECHO switching at step 100](figures/standard_echo_200_switch100.png)
 
-The step-50 schedules finish close together. `ECHO50 → RL150` peaks at `0.857` at step 195 and finishes at `0.823`, while `RL50 → ECHO150` peaks at `0.839` at the step 50 and finishes at `0.818`.
+Both schedules remained viable after changing objectives. `RL (100) → ECHO (100)` peaked at `0.827` at step 30, before the switch, and finished at `0.790`. `ECHO (100) → RL (100)` peaked at `0.847` at step 125, after the switch, and finished at `0.779`.
+
+### Short warmups
+
+Finally, we tested asymmetric schedules. `RL (50) → ECHO (150)` asks whether a short RL warmup can establish basic action behavior before a longer ECHO phase jointly improves the policy and observation model. `ECHO (50) → RL (150)` asks whether a short ECHO warmup can establish useful environment representations before a longer RL phase refines the policy.
 
 ![RL and ECHO switching at step 50 over 200 steps](figures/standard_echo_200_switch50.png)
 
-
-## Pure ECHO (SFT) objective switching
-
-Standard ECHO retains the RL policy objective while adding observation-token prediction. We also tested an ECHO (SFT) phase, the RL reward policy is removed, leaving only supervised next-token prediction over environment observations. These are single training runs, and each evaluation checkpoint reports the mean and standard deviation across three rollout replicates over 28 held-out tasks.
-
-![Training and held-out evaluation for pure RL and ECHO SFT switches](figures/sft_switch_training_eval.png)
+The two schedules finished close together. `ECHO (50) → RL (150)` peaked at `0.857` at step 195 and finished at `0.823`, while `RL (50) → ECHO (150)` peaked at `0.839` at step 50 and finished at `0.818`.
 
 
-The direction of the effect is clear in both schedules. Under ECHO (SFT) alone, held-out reward falls during the first 100 steps; switching to RL then recovers it. `ECHO (SFT) → RL` falls from `0.522` at initialization to `0.395` at the switch, then reaches a post-switch peak of `0.798` and finishes at `0.733`. In the reverse direction, RL first raises held-out reward to `0.796` at the switch, while the subsequent ECHO (SFT) phase gradually gives back part of that gain and finishes at `0.746`. Pure observation prediction therefore does not replace RL in this setting, although the model remains recoverable when RL is restored.
+## Observation-only SFT
+
+Standard ECHO retains the RL policy objective while adding observation-token prediction. To isolate the contribution of observation prediction, we also tested SFT-only phases in which the RL policy objective was disabled, leaving only supervised next-token prediction over environment observations. This ablation asks whether observation prediction can maintain or improve task behavior on its own, or whether ECHO's effect depends on combining it with reward-weighted policy updates. These are single training runs, and each evaluation checkpoint reports the mean and standard deviation across three rollout replicates over 28 held-out tasks. For context, the figures include faint non-switched RL and ECHO 1.0 references from separate runs.
+
+![Training and held-out evaluation for pure RL and observation-only SFT switches](figures/sft_switch_training_eval.png)
+
+
+The direction of the effect is clear in both schedules. Under SFT-only training, held-out reward falls during the first 100 steps; switching to RL then recovers it. `SFT-only → RL` falls from `0.522` at initialization to `0.395` at the switch, then reaches a post-switch peak of `0.798` and finishes at `0.733`. In the reverse direction, RL first raises held-out reward to `0.796` at the switch, while the subsequent SFT-only phase gradually gives back part of that gain and finishes at `0.746`. Observation prediction alone therefore does not replace RL in this setting, although the model remains recoverable when RL is restored.
 
 We also alternated the objectives every 50 steps:
 
 ![Four-phase RL and ECHO SFT schedule](figures/sft_four_phase_training_eval.png)
 
 
-The first ECHO (SFT) phase reduces held-out reward from `0.821` at step 50 to `0.631` at step 100. RL then recovers it to `0.804` at step 150, and the final ECHO (SFT) phase finishes at `0.790`. 
+The first SFT-only phase reduces held-out reward from `0.821` at step 50 to `0.631` at step 100. RL then recovers it to `0.804` at step 150, and the final SFT-only phase finishes at `0.790`.
 
 ## Turn constraint and rollout efficiency
 
@@ -181,10 +212,12 @@ The usable-sample rate increases monotonically with ECHO weight. Across all 100 
 
 ## What we learned
 
-1. **Under a 20-turn constraint, ECHO improves mean held-out reward.** All tested weights finish above RL across three independent runs, with ECHO 1.0 producing the strongest final result.
-2. **ECHO copes better with the hard length penalty.** Higher ECHO weights consistently reduce turn usage, reach the turn limit less often, increase the retained rollout fraction, and reduce the number of generated candidates required per update.
-3. **RL and ECHO can hand off without an obvious persistent collapse.** The single 200-step schedules remain viable after switching at step 50 or 100, but they do not establish a generally better ordering or switch point.
-4. **Observation prediction alone is not sufficient.** In the pure ECHO (SFT) ablation, held-out reward declined when reward-weighted policy updates were disabled and recovered when RL resumed. The positive ECHO results therefore appear to depend on combining observation prediction with the RL policy objective.
+These findings apply to a deliberately constrained BabyAI setting with a 20-turn interaction limit and explicit thinking disabled, emphasizing fast, action-oriented navigation without an explicit reasoning channel.
+
+1. **ECHO improved mean held-out reward in this setting.** All tested weights finished above RL across three independent runs, with ECHO 1.0 producing the strongest final result.
+2. **ECHO coped better with the hard length constraint.** Higher ECHO weights consistently reduced turn usage, reached the turn limit less often, increased the retained rollout fraction, and reduced the number of generated candidates required per update.
+3. **RL and ECHO could hand off without an obvious persistent collapse.** The single-run schedules remained viable after switching at step 50 or 100, but they did not establish a generally better ordering or switch point.
+4. **Observation prediction alone was not sufficient.** In the observation-only SFT ablation, held-out reward declined when reward-weighted policy updates were disabled and recovered when RL resumed. The positive ECHO results therefore appeared to depend on combining observation prediction with the RL policy objective.
 
 
 ## Reproducibility artifacts

@@ -581,7 +581,7 @@ def plot_switches(
             ]
         )
         labels.extend(
-            ["Always RL (3-run mean)", "Always ECHO (3-run mean)"]
+            ["Non-switched RL (3-run mean)", "Non-switched ECHO (3-run mean)"]
         )
     figure.legend(
         handles,

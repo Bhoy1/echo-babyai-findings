@@ -91,6 +91,22 @@ blockquote p {
   margin: 0;
 }
 
+.equation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px 10px;
+  margin: 30px 0 40px;
+  overflow-x: auto;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.55em;
+}
+
+.equation-term {
+  white-space: nowrap;
+}
+
 img {
   display: block;
   max-width: 100%;
