@@ -19,15 +19,16 @@ In the main comparison, all three ECHO variants produced higher final mean held-
 
 RL updates the assistant action tokens using reward-derived advantages. ECHO retains that policy objective and adds a next-token prediction loss over environment-observation tokens that arrive after assistant actions. The model sees those observations as context during rollout; the auxiliary loss teaches it to predict them during training. Standard ECHO therefore combines both components in the same update rather than training only on environment outputs.
 
-<div class="equation" role="math" aria-label="ECHO loss equals GRPO loss plus lambda times supervised loss on observation tokens">
-  <span class="equation-term"><i>L</i><sub>ECHO</sub></span>
+<div class="equation" role="math" aria-label="ECHO loss equals GRPO loss plus lambda times observation SFT loss">
+  <span class="equation-term"><strong>ECHO loss</strong></span>
   <span class="equation-term">=</span>
-  <span class="equation-term"><i>L</i><sub>GRPO</sub></span>
+  <span class="equation-term">GRPO loss</span>
   <span class="equation-term">+</span>
-  <span class="equation-term">&lambda; &middot; <i>L</i><sub>observation SFT</sub></span>
+  <span class="equation-term">&lambda; &times; observation SFT loss</span>
 </div>
 
-The GRPO term trains assistant action tokens, while the SFT term trains post-action environment-observation tokens. Each term is normalized by its own token count, and the ECHO weight <i>&lambda;</i> scales the observation-prediction term.
+
+<p class="equation-explanation"><i>&lambda;</i> is the ECHO weight. GRPO trains assistant action tokens, while observation SFT trains post-action environment tokens. The two losses are normalized independently before they are combined.</p>
 
 Conceptually, a trajectory is trained in two complementary ways:
 
@@ -212,7 +213,7 @@ The usable-sample rate increases monotonically with ECHO weight. Across all 100 
 
 ## What we learned
 
-These findings apply to a deliberately constrained BabyAI setting with a 20-turn interaction limit and explicit thinking disabled, emphasizing fast, action-oriented navigation without an explicit reasoning channel.
+These findings apply to a deliberately constrained BabyAI setting with a 20-turn interaction limit and explicit thinking disabled, emphasizing fast, action-oriented navigation.
 
 1. **ECHO improved mean held-out reward in this setting.** All tested weights finished above RL across three independent runs, with ECHO 1.0 producing the strongest final result.
 2. **ECHO coped better with the hard length constraint.** Higher ECHO weights consistently reduced turn usage, reached the turn limit less often, increased the retained rollout fraction, and reduced the number of generated candidates required per update.
