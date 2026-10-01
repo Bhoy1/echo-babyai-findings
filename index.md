@@ -19,16 +19,16 @@ In the main comparison, all three ECHO variants produced higher final mean held-
 
 RL updates the assistant action tokens using reward-derived advantages. ECHO retains that policy objective and adds a next-token prediction loss over environment-observation tokens that arrive after assistant actions. The model sees those observations as context during rollout; the auxiliary loss teaches it to predict them during training. Standard ECHO therefore combines both components in the same update rather than training only on environment outputs.
 
-<div class="equation" role="math" aria-label="ECHO loss equals GRPO loss plus lambda times observation SFT loss">
+<div class="equation" role="math" aria-label="ECHO loss equals GRPO loss plus lambda times SFT on observation tokens">
   <span class="equation-term"><strong>ECHO loss</strong></span>
   <span class="equation-term">=</span>
   <span class="equation-term">GRPO loss</span>
   <span class="equation-term">+</span>
-  <span class="equation-term">&lambda; &times; observation SFT loss</span>
+  <span class="equation-term">&lambda; &times; SFT (observation tokens)</span>
 </div>
 
 
-<p class="equation-explanation"><i>&lambda;</i> is the ECHO weight. GRPO trains assistant action tokens, while observation SFT trains post-action environment tokens. The two losses are normalized independently before they are combined.</p>
+<p class="equation-explanation"><i>&lambda;</i> is the ECHO weight. GRPO trains assistant action tokens, while SFT trains post-action environment-observation tokens. The two losses are normalized independently before they are combined.</p>
 
 Conceptually, a trajectory is trained in two complementary ways:
 
