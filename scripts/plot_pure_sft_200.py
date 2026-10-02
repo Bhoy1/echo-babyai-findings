@@ -236,10 +236,10 @@ def plot_switch_training_eval() -> None:
         wspace=0.18,
     )
     axes[0].set_title(
-        "Training Curve", loc="left", color=TEXT, fontsize=13, weight="bold", pad=12
+        "Training reward", loc="left", color=TEXT, fontsize=13, weight="bold", pad=12
     )
     axes[1].set_title(
-        "Held-Out Evaluation",
+        "Held-out evaluation reward",
         loc="left",
         color=TEXT,
         fontsize=13,

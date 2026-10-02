@@ -64,7 +64,7 @@ We use 84 training tasks and 28 held-out tasks, preserving the same 3:1 split wi
 | --- | --- |
 | Model | Qwen3.5-9B |
 | Training length | 100 policy updates |
-| Retained training batch | 128 rollouts |
+| Trainable batch | 128 rollouts |
 | Rollouts per task group | 8 |
 | Maximum interaction length | 20 turns |
 | Sampling temperature | 0.7 |
@@ -88,9 +88,9 @@ We first compared RL with ECHO weights 0.05, 0.5, and 1.0 to test whether observ
 
 ![Held-out evaluation summary](figures/always_on_eval_summary.png)
 
-Across three independent training runs, all three ECHO variants finish above RL in mean held-out reward. ECHO 0.05 reaches its best mean earliest, at step 60. ECHO 1.0 improves more gradually, reaches the strongest final mean, and has the smallest across-run variation at step 100.
+Across three independent training runs, all three ECHO variants finished above RL in mean held-out reward. ECHO 0.05 reached its best mean earliest, at step 60. ECHO 1.0 improved more gradually, reached the strongest final mean, and had the smallest across-run variation at step 100.
 
-RL also has the largest run-to-run variation at the final checkpoint: its SD is 0.053, compared with 0.036 for ECHO 0.05, 0.035 for ECHO 0.5, and 0.011 for ECHO 1.0. Every tested ECHO weight achieves a higher peak and final mean reward than RL while also producing a more consistent final result across runs.
+RL also had the largest run-to-run variation at the final checkpoint: its SD was 0.053, compared with 0.036 for ECHO 0.05, 0.035 for ECHO 0.5, and 0.011 for ECHO 1.0. Every tested ECHO weight achieved a higher peak and final mean reward than RL while also producing a more consistent final result across runs.
 
 These findings are promising but scoped. We tested one model size in one embodied AI environment using 84 training tasks and 28 held-out tasks, with three independent training runs per objective. They provide evidence that ECHO handles this length-constrained embodied setting well and motivate future work across turn limits, environments, model families, and dataset sizes.
 
@@ -146,7 +146,7 @@ We first extended RL and ECHO 1.0 without changing objectives, giving each 200 u
 
 ![Non-switched RL and ECHO over 200 steps](figures/standard_echo_200_always_on.png)
 
-The non-switched runs reach similar peak held-out rewards, but on different timelines. RL reaches `0.801` at step 25, then loses much of that gain and finishes at `0.713`. ECHO 1.0 peaks later, reaching `0.807` at step 85, and holds that performance through the end of training with a final reward of `0.805`.
+The non-switched runs reached similar peak held-out rewards, but on different timelines. RL reached `0.801` at step 25, then lost much of that gain and finished at `0.713`. ECHO 1.0 peaked later, reaching `0.807` at step 85, and held that performance through the end of training with a final reward of `0.805`.
 
 The 100-step experiments showed that higher ECHO weights could induce transcript-like continuations in the model’s output. In the separate 200-step ECHO 1.0 run, this behavior appeared temporary: the fraction of held-out trajectories that exhausted the output-token limit peaked at 50% at step 45, largely disappeared by step 85, and remained at zero after step 150. During steps 176–200, ECHO averaged 9.6 turns and 16,155 processed tokens per trajectory, compared with 11.7 turns and 19,948 tokens for RL. This single-run evidence suggests that the policy recovered from the output drift rather than remaining trapped in it.
 
@@ -175,10 +175,10 @@ The asymmetric schedules showed different transition behavior. `RL (50) → ECHO
 
 Standard ECHO retains the RL policy objective while adding observation-token prediction. To isolate the contribution of observation prediction, we also tested SFT-only phases in which the RL policy objective was disabled, leaving only supervised next-token prediction over environment observations. This ablation asks whether observation prediction can maintain or improve task behavior on its own, or whether ECHO's effect depends on combining it with reward-weighted policy updates. These are single training runs, and each evaluation checkpoint reports the mean and standard deviation across three rollout replicates over 28 held-out tasks. For context, the figures include faint non-switched RL and ECHO 1.0 references from separate runs.
 
-![Training and held-out evaluation for pure RL and observation-only SFT switches](figures/sft_switch_training_eval.png)
+![Training and held-out evaluation for RL and SFT-only switches](figures/sft_switch_training_eval.png)
 
 
-The direction of the effect is clear in both schedules. Under SFT-only training, held-out reward falls during the first 100 steps; switching to RL then recovers it. `SFT-only → RL` falls from `0.522` at initialization to `0.395` at the switch, then reaches a post-switch peak of `0.798` and finishes at `0.733`. In the reverse direction, RL first raises held-out reward to `0.796` at the switch, while the subsequent SFT-only phase gradually gives back part of that gain and finishes at `0.746`. Observation prediction alone therefore does not replace RL in this setting, although the model remains recoverable when RL is restored.
+The direction of the effect was clear in both schedules. Under SFT-only training, held-out reward fell during the first 100 steps; switching to RL then recovered it. `SFT-only → RL` fell from `0.522` at initialization to `0.395` at the switch, then reached a post-switch peak of `0.798` and finished at `0.733`. In the reverse direction, RL first raised held-out reward to `0.796` at the switch, while the subsequent SFT-only phase gradually gave back part of that gain and finished at `0.746`. Observation prediction alone therefore did not replace RL in this setting, although the model remained recoverable when RL was restored.
 
 We also tested repeated handoffs by dividing one 200-step run into four equal phases: `RL (50) → SFT-only (50) → RL (50) → SFT-only (50)`. This asks whether the loss observed under SFT-only training repeats after each switch and whether returning to RL can recover task performance more than once.
 
@@ -197,7 +197,7 @@ The turn metrics below describe these trainable rollouts.
 
 *Lines show five-step moving means over trainable rollouts. Bands are plus or minus one sample standard deviation across three independent runs.*
 
-RL trajectories average 18.56 turns, and 83.4% reach the 20-turn limit. Both measurements fall as ECHO weight increases. At ECHO 1.0, trajectories average 17.17 turns and reach the limit 70.7% of the time. All objectives produce longer trajectories later in training, but ECHO delays the shift toward the turn limit.
+RL trajectories averaged 18.56 turns, and 83.4% reached the 20-turn limit. Both measurements fell as ECHO weight increased. At ECHO 1.0, trajectories averaged 17.17 turns and reached the limit 70.7% of the time. All objectives produced longer trajectories later in training, but ECHO delayed the shift toward the turn limit.
 
 The 20-turn cap therefore acts as a coarse length penalty: it assigns no value to progress that would occur after turn 20. Because this limit binds more often for RL, the reward curves measure both task learning and the ability to make progress within a fixed interaction budget. They do not establish how the policies would rank with a larger or unlimited turn budget.
 
@@ -207,7 +207,7 @@ For each update, [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) conti
 
 *Lines show the five-step moving mean of trainable rollouts divided by generated candidates. Bands are plus or minus one sample standard deviation across three independent runs.*
 
-The usable-sample rate increases monotonically with ECHO weight. Across all 100 steps, it rises from 15.4% ± 1.3% for RL to 25.9% ± 2.2% for ECHO 1.0. Correspondingly, the number of extra candidates generated per update falls from 708.9 ± 73.6 to 368.9 ± 43.8. ECHO therefore fills the same-sized training batch with fewer environment interactions.
+The usable-sample rate increased monotonically with ECHO weight. Across all 100 steps, it rose from 15.4% ± 1.3% for RL to 25.9% ± 2.2% for ECHO 1.0. Correspondingly, the number of extra candidates generated per update fell from 708.9 ± 73.6 to 368.9 ± 43.8. ECHO therefore filled the same-sized training batch with fewer environment interactions.
 
 ## What we learned
 
