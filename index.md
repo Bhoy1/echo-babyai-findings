@@ -199,9 +199,7 @@ The turn metrics below describe these trainable rollouts.
 
 RL trajectories average 18.56 turns, and 83.4% reach the 20-turn limit. Both measurements fall as ECHO weight increases. At ECHO 1.0, trajectories average 17.17 turns and reach the limit 70.7% of the time. All objectives produce longer trajectories later in training, but ECHO delays the shift toward the turn limit.
 
-The cap is binding much more often for RL, so the reward curves partly measure whether a policy can complete or advance a task within 20 actions. They do not tell us how the same policies would rank if RL were allowed to continue acting. RL may be equally strong or stronger at a larger turn budget.
-
-Viewed another way, the hard cap is a form of length penalty: it assigns no value to progress that would occur after turn 20. It is a coarse penalty, but coping with it is useful in real-world agents. The defensible conclusion from these runs is therefore that ECHO copes better with this particular length constraint, not that ECHO unconditionally dominates RL on BabyAI.
+The 20-turn cap therefore acts as a coarse length penalty: it assigns no value to progress that would occur after turn 20. Because this limit binds more often for RL, the reward curves measure both task learning and the ability to make progress within a fixed interaction budget. They do not establish how the policies would rank with a larger or unlimited turn budget.
 
 For each update, [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) continues sampling rollouts until it has collected a full batch of trainable trajectories. The next plot shows the percentage of generated candidates that were used for training.
 
