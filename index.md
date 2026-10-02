@@ -207,7 +207,7 @@ For each update, [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) conti
 
 *Lines show the five-step moving mean of trainable rollouts divided by generated candidates. Bands are plus or minus one sample standard deviation across three independent runs.*
 
-The usable-sample rate increases monotonically with ECHO weight. Across all 100 steps, it rises from 15.4% ± 1.3% for RL to 25.9% ± 2.2% for ECHO 1.0. Correspondingly, the number of extra candidates generated per update falls from 708.9 ± 73.6 to 368.9 ± 43.8.
+The usable-sample rate increases monotonically with ECHO weight. Across all 100 steps, it rises from 15.4% ± 1.3% for RL to 25.9% ± 2.2% for ECHO 1.0. Correspondingly, the number of extra candidates generated per update falls from 708.9 ± 73.6 to 368.9 ± 43.8. ECHO therefore fills the same-sized training batch with fewer environment interactions.
 
 ## What we learned
 
