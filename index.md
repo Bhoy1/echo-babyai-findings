@@ -189,7 +189,7 @@ The first RL phase raised held-out reward from `0.522` at initialization to `0.8
 
 ## Turn constraint and rollout efficiency
 
-Three pre-batch filters were active: zero advantage, repetition, and gibberish. The logs record only aggregate generated and retained counts, so we cannot attribute rejected rollouts to individual filters. Qualitative inspection found no obvious repetition or gibberish in the saved trajectories, making zero advantage the likely dominant source of filtering. However, this is an inference rather than a directly measured result.
+Three pre-batch filters were active: zero advantage, repetition, and gibberish. The logs record only aggregate generated and retained counts, so we cannot attribute rejected rollouts to individual filters. Qualitative inspection found no obvious repetition or gibberish in the saved trajectories, making zero advantage the likely dominant source of filtering.
 
 The turn metrics below describe trainable rollouts: the trajectories that were ultimately used for policy updates.
 
@@ -203,7 +203,7 @@ The cap is binding much more often for RL, so the reward curves partly measure w
 
 Viewed another way, the hard cap is a form of length penalty: it assigns no value to progress that would occur after turn 20. It is a coarse penalty, but coping with it is useful in real-world agents. The defensible conclusion from these runs is therefore that ECHO copes better with this particular length constraint, not that ECHO unconditionally dominates RL on BabyAI.
 
-[prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) generates candidate rollouts until enough trainable samples remain for an update. The next plot shows the percentage of generated candidates that were retained and used for training.
+For each update, [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) continues sampling rollouts until it has collected a full batch of trainable trajectories. The next plot shows the percentage of generated candidates that were used for training.
 
 ![Usable rollout percentage over training](figures/behavior_tables/three_independent_runs_filtering_plot.png)
 
