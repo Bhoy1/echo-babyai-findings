@@ -92,7 +92,7 @@ Across three independent training runs, all three ECHO variants finish above RL 
 
 RL also has the largest run-to-run variation at the final checkpoint: its SD is 0.053, compared with 0.036 for ECHO 0.05, 0.035 for ECHO 0.5, and 0.011 for ECHO 1.0. Every tested ECHO weight achieves a higher peak and final mean reward than RL while also producing a more consistent final result across runs.
 
-These findings are promising but scoped. We tested one model size in one embodied AI environment using 84 training tasks and 28 held-out tasks, with three independent training runs per objective. They provide evidence that ECHO handles this length-constrained embodied setting well and motivate replication across turn limits, environments, model families, and dataset sizes.
+These findings are promising but scoped. We tested one model size in one embodied AI environment using 84 training tasks and 28 held-out tasks, with three independent training runs per objective. They provide evidence that ECHO handles this length-constrained embodied setting well and motivate future work across turn limits, environments, model families, and dataset sizes.
 
 ## Output behavior and token usage
 
