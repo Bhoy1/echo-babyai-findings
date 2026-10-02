@@ -180,12 +180,12 @@ Standard ECHO retains the RL policy objective while adding observation-token pre
 
 The direction of the effect is clear in both schedules. Under SFT-only training, held-out reward falls during the first 100 steps; switching to RL then recovers it. `SFT-only → RL` falls from `0.522` at initialization to `0.395` at the switch, then reaches a post-switch peak of `0.798` and finishes at `0.733`. In the reverse direction, RL first raises held-out reward to `0.796` at the switch, while the subsequent SFT-only phase gradually gives back part of that gain and finishes at `0.746`. Observation prediction alone therefore does not replace RL in this setting, although the model remains recoverable when RL is restored.
 
-We also alternated the objectives every 50 steps:
+We also tested repeated handoffs by dividing one 200-step run into four equal phases: `RL (50) → SFT-only (50) → RL (50) → SFT-only (50)`. This asks whether the loss observed under SFT-only training repeats after each switch and whether returning to RL can recover task performance more than once.
 
 ![Four-phase RL and ECHO SFT schedule](figures/sft_four_phase_training_eval.png)
 
 
-The first SFT-only phase reduces held-out reward from `0.821` at step 50 to `0.631` at step 100. RL then recovers it to `0.804` at step 150, and the final SFT-only phase finishes at `0.790`.
+The first RL phase raised held-out reward from `0.522` at initialization to `0.821` at step 50. The first SFT-only phase then reduced it to `0.631` at step 100. Returning to RL recovered the reward to `0.804` at step 150. The final SFT-only phase behaved differently from the first: reward briefly reached `0.814` at step 165 and finished at `0.790`, only slightly below its value at the second switch. This run shows that performance could recover when RL was restored and that repeated objective changes did not cause a persistent collapse. However, because the second SFT-only phase caused much less degradation than the first and the schedule was run only once, the experiment does not separate phase-order effects from training progress or evaluation noise.
 
 ## Turn constraint and rollout efficiency
 
