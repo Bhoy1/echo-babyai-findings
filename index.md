@@ -160,7 +160,7 @@ We then repeated the midpoint switch over a longer horizon. `RL (100) → ECHO (
 
 ![RL and ECHO switching at step 100](figures/standard_echo_200_switch100.png)
 
-Both schedules remained viable after changing objectives. `RL (100) → ECHO (100)` peaked at `0.827` at step 30, before the switch, and finished at `0.790`. `ECHO (100) → RL (100)` peaked at `0.847` at step 125, after the switch, and finished at `0.779`.
+Both schedules remained viable after changing objectives, but their post-switch trajectories differed. `RL (100) → ECHO (100)` fell from `0.800` at the switch to `0.712` at step 105, then recovered during the ECHO phase and reached a post-switch high of `0.826` at step 180, nearly matching its overall peak of `0.827` at step 30. It finished at `0.790`. `ECHO (100) → RL (100)` reached its overall peak of `0.847` at step 125, shortly after switching to RL, but that gain was not sustained; it finished at `0.779`. Both objectives could therefore take over after 100 updates without permanent collapse, but these single runs do not establish a preferred ordering.
 
 ### Short warmups
 
@@ -168,7 +168,7 @@ Finally, we tested asymmetric schedules. `RL (50) → ECHO (150)` asks whether a
 
 ![RL and ECHO switching at step 50 over 200 steps](figures/standard_echo_200_switch50.png)
 
-The two schedules finished close together. `ECHO (50) → RL (150)` peaked at `0.857` at step 195 and finished at `0.823`, while `RL (50) → ECHO (150)` peaked at `0.839` at step 50 and finished at `0.818`.
+The asymmetric schedules showed different transition behavior. `RL (50) → ECHO (150)` reached `0.839` at the switch, dropped to `0.735` by step 65, and then recovered during the longer ECHO phase to finish at `0.818`, although it never exceeded its step-50 peak. `ECHO (50) → RL (150)` entered the RL phase at `0.761`, improved to `0.838` by step 65, reached `0.857` at step 195, and finished at `0.823`. This suggests that a short ECHO warmup was compatible with subsequent RL improvement, while ECHO could also preserve much of the behavior learned during an RL warmup after an initial dip. Because each schedule was run once, these results demonstrate feasibility rather than a generally superior ordering.
 
 
 ## Observation-only SFT
