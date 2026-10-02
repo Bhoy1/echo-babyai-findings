@@ -189,9 +189,9 @@ The first RL phase raised held-out reward from `0.522` at initialization to `0.8
 
 ## Turn constraint and rollout efficiency
 
-Three pre-batch filters were active: zero advantage, repetition, and gibberish. The logs record only aggregate generated and retained counts, so we cannot attribute rejected rollouts to individual filters. Qualitative inspection found no obvious repetition or gibberish in the saved trajectories, making zero advantage the likely dominant source of filtering.
+A trainable rollout is a generated trajectory that passes the active pre-batch filters and is included in the policy update. Three filters were active in these experiments: zero advantage, repetition, and gibberish. The logs record only aggregate generated and trainable counts, so we cannot attribute rejected rollouts to individual filters. Qualitative inspection found no obvious repetition or gibberish in the saved trajectories, making zero advantage the likely dominant source of filtering.
 
-The turn metrics below describe trainable rollouts: the trajectories that were ultimately used for policy updates.
+The turn metrics below describe these trainable rollouts.
 
 ![Turn length and turn-limit rate over training](figures/behavior_tables/three_independent_runs_turns_plot.png)
 
