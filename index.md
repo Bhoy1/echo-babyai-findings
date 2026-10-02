@@ -215,10 +215,10 @@ The usable-sample rate increases monotonically with ECHO weight. Across all 100 
 
 These findings apply to a deliberately constrained BabyAI setting with a 20-turn interaction limit and explicit thinking disabled, emphasizing fast, action-oriented navigation.
 
-1. **ECHO improved mean held-out reward in this setting.** All tested weights finished above RL across three independent runs, with ECHO 1.0 producing the strongest final result.
-2. **ECHO coped better with the hard length constraint.** Higher ECHO weights consistently reduced turn usage, reached the turn limit less often, increased the retained rollout fraction, and reduced the number of generated candidates required per update.
-3. **RL and ECHO could hand off without an obvious persistent collapse.** The single-run schedules remained viable after switching at step 50 or 100, but they did not establish a generally better ordering or switch point.
-4. **Observation prediction alone was not sufficient.** In the observation-only SFT ablation, held-out reward declined when reward-weighted policy updates were disabled and recovered when RL resumed. The positive ECHO results therefore appeared to depend on combining observation prediction with the RL policy objective.
+1. **ECHO improved mean held-out reward in the replicated 100-step comparison.** All tested ECHO weights finished above RL across three independent runs, with ECHO 1.0 producing the strongest final result.
+2. **ECHO coped better with the hard length constraint.** Higher ECHO weights reduced average turn usage, reached the turn limit less often, increased the usable rollout fraction, and reduced the number of candidate rollouts required per update.
+3. **RL and ECHO could hand off without persistent collapse.** The single-run schedules remained viable after switching at steps 50 or 100, but did not establish a generally better ordering or switch point.
+4. **Observation prediction alone was not sufficient.** In the single-run SFT-only ablations, held-out reward generally declined without reward-weighted policy updates and recovered when RL resumed. ECHO's positive results therefore appeared to depend on combining observation prediction with the RL policy objective.
 
 
 ## Reproducibility artifacts
