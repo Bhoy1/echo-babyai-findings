@@ -28,7 +28,7 @@ RL updates the assistant action tokens using reward-derived advantages. ECHO ret
 </div>
 
 
-<p class="equation-explanation"><i>&lambda;</i> is the ECHO weight. GRPO trains assistant action tokens, while SFT trains post-action environment-observation tokens. The two losses are normalized independently before they are combined.</p>
+<p class="equation-explanation"><i>&lambda;</i> is the ECHO weight. GRPO trains assistant action tokens, while SFT trains observation tokens.</p>
 
 Conceptually, a trajectory is trained in two complementary ways:
 
