@@ -162,6 +162,11 @@ def plot_non_switched_references(axes: np.ndarray) -> None:
             color=color,
             linewidth=1.35,
             linestyle=linestyle,
+            marker=marker,
+            markevery=5,
+            markersize=3.0,
+            markerfacecolor="white",
+            markeredgewidth=0.9,
             alpha=0.58,
             label=label,
             zorder=1,
@@ -316,7 +321,7 @@ def plot_switch_training_eval() -> None:
 
     add_legend(
         figure,
-        axes[0],
+        axes[1],
         ["SFT-only → RL", "RL → SFT-only"],
     )
     save_figure(figure, "sft_switch_training_eval")
