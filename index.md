@@ -110,6 +110,8 @@ Action:
 
 The BabyAI harness parses and executes only the first line. The first action can therefore still earn reward even when the remainder of the completion is malformed. The complete assistant response nevertheless remains in the saved trajectory and subsequent model context, increasing both generated tokens and the prompt length of later turns.
 
+For the replicated 100-step runs, we next measured all tokens processed during held-out evaluation, not only the environment observations that received ECHO supervision. The plot separates environment-observation tokens from assistant-output tokens and reports total processed tokens, including prompt, trajectory history, and chat-template overhead.
+
 ![Held-out environment-observation, assistant-output, and total token usage](figures/token_metrics/heldout_observation_output_total_tokens.png)
 
 *Bars show mean tokens per held-out trajectory, and error bars show plus or minus one sample standard deviation across three independent training runs. Each step window pools evaluations from every five-step checkpoint over 28 held-out tasks with three rollout replicates. Environment observations are counted each time they are processed, so earlier observations can be counted again on later turns. Total tokens also include the system message, initial prompt, prior-action history, and chat-template overhead.*
