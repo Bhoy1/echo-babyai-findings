@@ -118,6 +118,8 @@ For the replicated 100-step runs, we next measured all tokens processed during h
 
 Environment-observation processing remains broadly similar across objectives. The large assistant-output counts at higher ECHO weights are driven by a minority of transcript-like completions rather than uniformly longer action strings. They should not be interpreted as evidence that the model learned an accurate simulator.
 
+To show how concentrated this behavior was, we also measured the percentage of held-out trajectories containing at least one assistant completion that exhausted the 1,024-token output limit.
+
 ![Held-out trajectories hitting the output limit](figures/token_metrics/heldout_output_limit_behavior.png)
 
 *Percentage of held-out trajectories containing at least one 1,024-token assistant completion. Each five-step checkpoint evaluates 28 held-out tasks with three rollout replicates; values are pooled into 25-step windows and then averaged across three independent training runs.*
