@@ -117,7 +117,7 @@ def render_output_limit_table() -> None:
     axis.axis("off")
     table = axis.table(
         cellText=rows,
-        colLabels=["Objective", *quarters],
+        colLabels=["Objective", *[f"Steps {quarter}" for quarter in quarters]],
         cellLoc="center",
         colLoc="center",
         loc="center",

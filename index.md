@@ -122,7 +122,7 @@ To show how concentrated this behavior was, we also measured the percentage of h
 
 ![Held-out trajectories hitting the output limit](figures/token_metrics/heldout_output_limit_behavior.png)
 
-*Percentage of held-out trajectories containing at least one 1,024-token assistant completion. Each five-step checkpoint evaluates 28 held-out tasks with three rollout replicates; values are pooled into 25-step windows and then averaged across three independent training runs.*
+*Percentage of held-out trajectories containing at least one 1,024-token assistant completion. Each five-step checkpoint evaluates 28 held-out tasks with three rollout replicates; values are grouped into the training-step ranges shown in the column headers and then averaged across three independent training runs.*
 
 This behavior could be constrained at inference by stopping generation at the first newline, enforcing a one-action output grammar, or using a substantially smaller completion limit. The present experiments preserve the same 1,024-token limit for RL and ECHO, which exposes that ECHO can induce trajectory continuation or role confusion without necessarily destroying the useful policy encoded in the first action.
 
