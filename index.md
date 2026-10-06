@@ -144,7 +144,7 @@ These runs show that switching between RL and ECHO is feasible, but they do not 
 
 The 100-step experiments showed that the objectives could hand off without a universal collapse. We next used ECHO 1.0, the strongest final configuration in the primary comparison, to test whether the behavior persisted over 200 updates. Each schedule below has one training run, and every evaluation checkpoint again covers the 28 held-out tasks with three rollout replicates per task.
 
-### Non-switched runs
+### 200-step baselines
 
 We first extended RL and ECHO 1.0 without changing objectives, giving each 200 updates. This tests whether the difference observed at 100 steps persists, disappears, or emerges differently with additional optimization.
 
@@ -158,7 +158,7 @@ The 100-step experiments showed that higher ECHO weights could induce transcript
 
 *Bars show mean tokens per held-out trajectory from one training run per objective. Each step window pools five-step checkpoints, and each checkpoint evaluates 28 held-out tasks with three rollout replicates. Environment observations are counted again whenever they are processed on later turns. Total tokens also include the system message, initial prompt, prior-action history, and chat-template overhead.*
 
-### Equal-length phases
+### Switched after 100 steps
 
 We then repeated the midpoint switch over a longer horizon. `RL (100) → ECHO (100)` means 100 RL updates followed by 100 ECHO 1.0 updates; `ECHO (100) → RL (100)` reverses that order. This keeps the two phases equal in length while moving the switch from step 50 to step 100.
 
@@ -168,7 +168,7 @@ We then repeated the midpoint switch over a longer horizon. `RL (100) → ECHO (
 
 Both schedules remained viable after changing objectives, but their post-switch trajectories differed. `RL (100) → ECHO (100)` fell from `0.800` at the switch to `0.712` at step 105, then recovered during the ECHO phase and reached a post-switch high of `0.826` at step 180, nearly matching its overall peak of `0.827` at step 30. It finished at `0.790`. `ECHO (100) → RL (100)` reached its overall peak of `0.847` at step 125, shortly after switching to RL, but that gain was not sustained; it finished at `0.779`. Both objectives could therefore take over after 100 updates without permanent collapse, but these single runs do not establish a preferred ordering.
 
-### Short warmups
+### Switched after 50 steps
 
 Finally, we tested asymmetric schedules. `RL (50) → ECHO (150)` asks whether a short RL warmup can establish basic action behavior before a longer ECHO phase jointly improves the policy and observation model. `ECHO (50) → RL (150)` asks whether a short ECHO warmup can establish useful environment representations before a longer RL phase refines the policy.
 
