@@ -401,7 +401,7 @@ def plot_four_phase() -> None:
         fontsize=13,
         weight="bold",
     )
-    add_legend(figure, axes[0], ["Alternating RL / SFT-only"])
+    add_legend(figure, axes[1], ["Alternating RL / SFT-only"])
     save_figure(figure, "sft_four_phase_training_eval")
 
 
