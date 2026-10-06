@@ -110,6 +110,8 @@ Action:
 
 The BabyAI harness parses and executes only the first line. The first action can therefore still earn reward even when the remainder of the completion is malformed. The complete assistant response nevertheless remains in the saved trajectory and subsequent model context, increasing both generated tokens and the prompt length of later turns.
 
+Importantly, this behavior did not persist. In the follow-up 200-step ECHO 1.0 experiment shown below, output-limit completions largely disappeared by step 85 and were absent after step 150, showing that continued training removed this measured form of output drift in that run.
+
 For the replicated 100-step runs, we next measured all tokens processed during held-out evaluation, not only the environment observations that received ECHO supervision. The plot separates environment-observation tokens from assistant-output tokens and reports total processed tokens, including prompt, trajectory history, and chat-template overhead.
 
 ![Held-out environment-observation, assistant-output, and total token usage](figures/token_metrics/heldout_observation_output_total_tokens.png)
