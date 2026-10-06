@@ -178,7 +178,7 @@ Finally, we tested asymmetric schedules. `RL (50) → ECHO (150)` asks whether a
 
 *Faint curves show separate, independent non-switched RL and ECHO 1.0 runs for comparison; they are not matched continuations of the switching schedules.*
 
-The asymmetric schedules showed different transition behavior. `RL (50) → ECHO (150)` reached `0.839` at the switch, dropped to `0.735` by step 65, and then recovered during the longer ECHO phase to finish at `0.818`, although it never exceeded its step-50 peak. `ECHO (50) → RL (150)` entered the RL phase at `0.761`, improved to `0.838` by step 65, reached `0.857` at step 195, and finished at `0.823`. This suggests that a short ECHO warmup was compatible with subsequent RL improvement, while ECHO could also preserve much of the behavior learned during an RL warmup after an initial dip. Because each schedule was run once, these results demonstrate feasibility rather than a generally superior ordering.
+The asymmetric schedules showed different transition behavior. `RL (50) → ECHO (150)` reached `0.839` at the switch, dropped to `0.735` by step 65, and then recovered during the longer ECHO phase to finish at `0.818`, although it never exceeded its step-50 peak. `ECHO (50) → RL (150)` entered the RL phase at `0.761`, improved to `0.838` by step 65, reached `0.857` at step 195, and finished at `0.823`. The latter result suggests that a short ECHO warmup followed by standard RL could be a useful schedule: ECHO can first provide dense observation-prediction updates, after which RL can refine the policy directly against reward. ECHO also preserved much of the behavior learned during an RL warmup after an initial dip. Because each schedule was run once, these results motivate replicated warmup experiments rather than establishing a generally superior ordering.
 
 
 ## SFT-only ablation
@@ -225,7 +225,7 @@ These findings apply to a deliberately constrained BabyAI setting with a 20-turn
 
 1. **ECHO improved mean held-out reward in the replicated 100-step comparison.** All tested ECHO weights finished above RL across three independent runs, with ECHO 1.0 producing the strongest final result.
 2. **ECHO coped better with the hard length constraint.** Higher ECHO weights reduced average turn usage, reached the turn limit less often, increased the usable rollout fraction, and reduced the number of candidate rollouts required per update.
-3. **RL and ECHO could hand off without persistent collapse.** The single-run schedules remained viable after switching at steps 50 or 100, but did not establish a generally better ordering or switch point.
+3. **A short ECHO warmup followed by RL is a promising schedule to study.** In one 200-step run, `ECHO (50) → RL (150)` continued improving after the switch and reached a strong late-training peak. More generally, RL and ECHO could hand off without persistent collapse, although the single-run schedules did not establish a consistently better ordering or switch point.
 4. **Observation prediction alone was not sufficient.** In the single-run SFT-only ablations, held-out reward generally declined without reward-weighted policy updates and recovered when RL resumed. ECHO's positive results therefore appeared to depend on combining observation prediction with the RL policy objective.
 
 
