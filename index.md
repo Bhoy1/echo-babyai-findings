@@ -226,8 +226,8 @@ These findings come from a constrained BabyAI setting that emphasized fast, reac
 3. **ECHO needed fewer candidate rollouts to fill a training batch.** Higher weights increased the usable-rollout fraction under the same filters. Zero-advantage samples were excluded from both RL and ECHO training.
 4. **ECHO sustained performance better in the 200-step baseline comparison.** RL and ECHO 1.0 reached similar peaks, but ECHO finished near its peak while RL declined.
 5. **Some ECHO gains emerged later in training.** The ECHO 1.0 baseline peaked later than RL, and several switching schedules improved late. This suggests that longer training horizons could matter more for ECHO.
-6. **The 50/150 schedules were promising.** Both directions finished above the separate RL and ECHO baseline runs. `ECHO (50) → RL (150)` continued improving after the switch, motivating further tests of short ECHO warmups followed by RL. The switching experiments showed feasible handoffs, but did not establish a generally better ordering or switch point.
-7. **Observation-token SFT alone did not improve task performance here.** SFT-only training was feasible, but reward generally declined during those phases and recovered when RL resumed. The positive results came from combining RL and observation prediction in ECHO.
+6. **The 50/150 schedules were promising.** Both directions finished above the RL and ECHO baseline runs. `ECHO (50) → RL (150)` continued improving after the switch, motivating further tests of short ECHO warmups followed by RL.
+7. **Observation-token SFT alone did not improve task performance here.** SFT-only training was feasible, but reward generally declined during those phases and recovered when RL resumed. The positive results came from ECHO's combined objective of RL and observation prediction.
 
 
 ## Reproducibility artifacts
