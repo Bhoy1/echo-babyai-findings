@@ -240,7 +240,7 @@ These findings come from a constrained BabyAI setting that emphasized fast, reac
 
 ## Reproducibility artifacts
 
-The [AgentBoard BabyAI environment](https://app.primeintellect.ai/dashboard/environments/bhoy1/agentboard-babyai) is available on Prime's Environment Hub.
+Environment package and training instructions: coming soon.
 
 ## Acknowledgments
 
