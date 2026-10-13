@@ -201,13 +201,9 @@ RL established and restored task performance, while SFT-only phases generally re
 
 ## Turn constraint and rollout efficiency
 
-GRPO learns from differences in reward between samples in the same rollout group. If every sample receives the same reward, their RL advantages are zero. ECHO's SFT component can still learn from their observation tokens. Here we examine how ECHO changed the number of rollouts needed to fill a training batch and their turn usage.
+Before each training update, [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) filtered rollouts based on zero RL advantage, repetition, and gibberish. Only trajectories that passed these filters were used for training. Both RL and ECHO used the same rollout filters, excluding zero-advantage trajectories from training. We observed no obvious repetition or gibberish in the saved trajectories, suggesting that zero advantage was the primary reason for filtering.
 
-At the time, [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl)'s zero-advantage filter used only the RL advantage: samples with zero advantage were discarded even though ECHO's SFT component could still provide a training signal. The intended adjustment going forward is to retain those samples for ECHO training. The efficiency gains below therefore reflect ECHO producing more trainable rollouts.
-
-A **trainable rollout** is a trajectory that passes the active filters and is used for training. Three filters were active: zero advantage, repetition, and gibberish. The logs recorded total generated and trainable counts, but did not separate rejections by filter. We saw no obvious repetition or gibberish in the saved trajectories, suggesting that zero advantage accounted for most filtering.
-
-For each update, prime-rl sampled until enough rollouts passed the filters to fill the training batch. The first plot shows the usable-sample rate: the percentage of generated rollouts that passed those filters and were used for training.
+Each update required a fixed number of trainable rollouts, so prime-rl continued sampling until the batch was full. The first plot shows the usable-sample rate: the percentage of generated rollouts that passed the filters and were used for training.
 
 ![Usable rollout percentage over training](figures/behavior_tables/three_independent_runs_filtering_plot.png)
 
