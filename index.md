@@ -179,7 +179,7 @@ The asymmetric schedules showed different transition behavior. `RL (50) → ECHO
 
 ## SFT-only ablation
 
-Standard ECHO retains the RL policy objective while adding observation-token prediction. To isolate observation prediction, we tested SFT-only phases in which the RL objective was disabled and training used only supervised next-token prediction over observation tokens. This ablation asks whether observation prediction can maintain or improve task behavior on its own, or whether ECHO's effect depends on combining it with reward-weighted policy updates. These are single training runs, and each evaluation checkpoint reports the mean and standard deviation across three rollout replicates over 28 held-out tasks. The figures include faint RL and ECHO 1.0 reference trajectories from separate runs.
+Standard ECHO retains the RL policy objective while adding observation-token prediction. To isolate observation prediction, we tested SFT-only phases in which the RL objective was disabled and training used only supervised next-token prediction over observation tokens. This ablation asks whether observation prediction can maintain or improve task behavior on its own, or whether ECHO's effect depends on combining it with reward-weighted policy updates. These are single training runs, and each evaluation checkpoint reports the mean and standard deviation across three rollout replicates over 28 held-out tasks.
 
 ![Training and held-out evaluation for RL and SFT-only switches](figures/sft_switch_training_eval.png)
 
