@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "ECHO on BabyAI"
-description: "ECHO auxiliary training and objective switching under a strict 20-turn BabyAI interaction budget."
+description: "Exploring ECHO for embodied agents"
 ---
 
 # ECHO on BabyAI
