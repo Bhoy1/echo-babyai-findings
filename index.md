@@ -236,7 +236,7 @@ These findings come from a constrained BabyAI setting that emphasized fast, reac
 
 ## Reproducibility artifacts
 
-Environment package and training instructions: coming soon.
+Environment coming soon.
 
 ## Acknowledgments
 
