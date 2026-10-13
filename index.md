@@ -249,7 +249,7 @@ This work was completed during the Prime-RL residency. Sebastian Müller ([@omou
   title   = "ECHO on BabyAI",
   author  = "Hoy, Billy and Müller, Sebastian",
   year    = "2026",
-  month   = "September",
+  month   = "October",
   url     = "https://bhoy1.github.io/echo-babyai-findings/"
 }
 ```
