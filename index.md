@@ -197,7 +197,7 @@ RL established and restored task performance, while SFT-only phases generally re
 
 ## Turn constraint and rollout efficiency
 
-Before each training update, [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) filtered rollouts based on zero RL advantage, repetition, and gibberish. Only trajectories that passed these filters were used for training. Both RL and ECHO used the same rollout filters, excluding zero-advantage trajectories from training. We observed no obvious repetition or gibberish in the saved trajectories, suggesting that zero advantage was the primary reason for filtering.
+Before each training update, [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) filtered rollouts based on zero RL advantage, repetition, and gibberish. Only trajectories that passed these filters were used for training. Both RL and ECHO used the same rollout filters. We observed no obvious repetition or gibberish in the saved trajectories, suggesting that zero advantage was the primary reason for filtering.
 
 Each update required a fixed number of trainable rollouts, so prime-rl continued sampling until the batch was full. The first plot shows the usable-sample rate: the percentage of generated rollouts that passed the filters and were used for training.
 
