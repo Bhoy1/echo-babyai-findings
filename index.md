@@ -132,7 +132,7 @@ This behavior could be constrained at inference by stopping generation at the fi
 
 After comparing fixed objectives, we asked whether RL and ECHO could hand off to one another during training. Each schedule ran for 100 updates and switched at the midpoint. We write `RL (50) → ECHO (50)` for 50 RL updates followed by 50 ECHO updates, and `ECHO (50) → RL (50)` for the reverse. Parenthesized numbers denote update counts, while the ECHO weight is stated separately. Standard ECHO still includes the RL policy objective; switching to ECHO adds the observation-prediction loss, while switching back to RL removes it.
 
-We tested both directions at ECHO weights 0.05, 0.5, and 1.0. Each schedule has one training run. Every evaluation checkpoint covers all 28 held-out tasks with three rollout replicates, so the evaluation bands show variation across rollout replicates rather than across independent training runs. The faint reference curves show the three-run means of the corresponding RL and ECHO objectives.
+We tested both directions at ECHO weights 0.05, 0.5, and 1.0. Each schedule has one training run. Every evaluation checkpoint covers all 28 held-out tasks with three rollout replicates, so the evaluation bands show variation across rollout replicates rather than across independent training runs.
 
 ![RL and ECHO switching after 50 steps](figures/switch_curves_with_three_run_means_zero_to_one.png)
 

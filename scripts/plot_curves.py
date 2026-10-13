@@ -190,7 +190,7 @@ def style_axis(
         axis.text(
             50,
             0.98,
-            "switch",
+            "Switch",
             transform=axis.get_xaxis_transform(),
             ha="center",
             va="top",
@@ -593,27 +593,6 @@ def plot_switches(
         fontsize=10.5,
         handlelength=3.0,
         columnspacing=1.8 if with_references else 2.5,
-    )
-    title = "Switch schedules at step 50"
-    if view == "second_half_zoom":
-        title += " · steps 50–100"
-    figure.suptitle(
-        title,
-        x=0.075,
-        y=0.975,
-        ha="left",
-        fontsize=20,
-        fontweight="bold",
-        color=TEXT,
-    )
-    figure.text(
-        0.985,
-        0.972,
-        "Train: 5-step moving mean   |   Eval: mean ± 1 SD",
-        ha="right",
-        va="top",
-        fontsize=9.5,
-        color=MUTED,
     )
     name = "switch_curves_with_three_run_means" if with_references else "switch_curves"
     if view == "zero_to_one":

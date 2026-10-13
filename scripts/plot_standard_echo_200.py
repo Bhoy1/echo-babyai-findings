@@ -158,34 +158,28 @@ def plot_figure(
             strict=True,
         ):
             label = f"Non-switched {item.label} (separate run)"
-            axes[0].plot(
-                item.train_steps,
-                moving_mean(item.train_rewards),
+            reference_style = dict(
                 color=item.color,
                 linewidth=1.35,
                 linestyle=linestyle,
                 marker=item.marker,
-                markevery=5,
-                markersize=3.0,
+                markersize=4.0,
                 markerfacecolor="white",
-                markeredgewidth=0.9,
-                alpha=0.58,
+                markeredgewidth=1.1,
+                alpha=0.7,
                 label=label,
-                zorder=1,
+                zorder=3,
+            )
+            axes[0].plot(
+                item.train_steps,
+                moving_mean(item.train_rewards),
+                markevery=5,
+                **reference_style,
             )
             axes[1].plot(
                 item.eval_steps,
                 item.eval_means,
-                color=item.color,
-                linewidth=1.35,
-                linestyle=linestyle,
-                marker=item.marker,
-                markersize=3.0,
-                markerfacecolor="white",
-                markeredgewidth=0.9,
-                alpha=0.58,
-                label=label,
-                zorder=1,
+                **reference_style,
             )
 
     for item in series:
