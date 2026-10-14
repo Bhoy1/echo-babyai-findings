@@ -2,6 +2,8 @@
 layout: default
 title: "ECHO on BabyAI"
 description: "Exploring ECHO for embodied agents"
+image: "https://bhoy1.github.io/echo-babyai-findings/assets/echo-babyai-title-card.png"
+image_alt: "ECHO on BabyAI: Exploring ECHO for embodied agents"
 ---
 
 # ECHO on BabyAI
